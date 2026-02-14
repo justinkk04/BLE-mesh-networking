@@ -1,0 +1,4 @@
+# BLE Gateway Dependencies
+bleak>=0.21.0
+# Optional: for TUI mode (falls back to plain CLI without it)
+textual>=0.40.0

@@ -1,0 +1,22 @@
+# Override some defaults so BT stack is enabled
+CONFIG_BT_ENABLED=y
+CONFIG_BT_BTU_TASK_STACK_SIZE=4512
+CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y
+
+# ESP BLE Mesh node with client (no server needed)
+CONFIG_BLE_MESH=y
+CONFIG_BLE_MESH_NODE=y
+CONFIG_BLE_MESH_RELAY=y
+CONFIG_BLE_MESH_PB_GATT=y
+CONFIG_BLE_MESH_TX_SEG_MSG_COUNT=10
+CONFIG_BLE_MESH_RX_SEG_MSG_COUNT=10
+CONFIG_BLE_MESH_GENERIC_ONOFF_CLI=y
+
+# Enable persistent storage for mesh state across power cycles
+CONFIG_BLE_MESH_SETTINGS=y
+
+# Enable NimBLE for custom GATT service
+CONFIG_BT_NIMBLE_ENABLED=y
+
+# Allow larger ATT MTU for sensor data notifications (default 23 is too small)
+CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU=185
