@@ -1,6 +1,6 @@
 # BLE Mesh DC Power Monitor
 
-**Version:** v0.5.0 (Power Manager Refinement)
+**Version:** v0.6.0 (Group Addressing)
 **Status:** Stable / In Development
 
 A self-healing BLE Mesh network for remote DC power monitoring and control. The system uses ESP32-C6 nodes to read INA260 sensors directly via I2C and control loads via PWM, bridged to a Raspberry Pi 5 gateway for automated power management.
@@ -24,6 +24,7 @@ INA260 sensor + Load Circuit
 
 - **Direct Sensing:** ESP32-C6 reads INA260 voltage/current/power directly (no secondary MCU).
 - **Power Manager:** Equilibrium-based balancing algorithm maintains total power budget across N nodes.
+- **Group Addressing:** O(1) polling using BLE Mesh group broadcasts (0xC000) for massive efficiency gains.
 - **Dynamic Discovery:** Automatically detects sensing nodes vs relays from BLE scan.
 - **Event-Driven Pacing:** Fast command execution (~300ms/node) with no fixed delays.
 - **TUI Gateway:** Textual-based terminal UI with live node table, scrolling logs, and debug mode.
@@ -38,7 +39,22 @@ INA260 sensor + Load Circuit
 
 ## Roadmap
 
-- **v0.5.0 (Current):** PowerManager refinement, dynamic discovery, stable firmware.
-- **v0.6.0 (Next):** Group addressing (0xC000) to reduce poll time from O(N) to O(1).
-- **v0.7.0:** Self-healing gateway failover.
+- **v0.5.0 (Complete):** PowerManager refinement, dynamic discovery, stable firmware.
+- **v0.6.0 (Current):** Group addressing implemented. Poll time reduced from O(N) to O(1).
+- **v0.7.0 (Next):** Self-healing gateway failover.
 - **v1.0.0:** Final stress testing and release.
+
+## Legacy Architecture (v0.3.0)
+
+> **Note:** This architecture is preserved for historical reference. The current v0.5.0+ system replaces the Pico 2W with direct ESP32-C6 I2C sensing.
+
+In v0.3.0, the system used a 3-tier architecture:
+
+- **Pico 2W:** Read INA260 sensor and controlled PWM load. Sent data via UART.
+- **ESP32-C6:** Acted as a UART-to-BLE bridge (GATT Server).
+- **Pi 5:** GATT Client receiving notifications.
+
+Original documentation:
+
+- [Point-to-Point GATT Documentation](Documentation/pi5-GATT-ESP-pico2w-documentation/GATT_Point_to_Point_Documentation.md)
+- [v0.3.0 Progress Report](Documentation/pi5-GATT-ESP-pico2w-documentation/progress_report.md)
