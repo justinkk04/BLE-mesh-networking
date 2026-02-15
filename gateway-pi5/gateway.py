@@ -410,22 +410,16 @@ class PowerManager:
             self._polling = False
 
     async def _poll_all_nodes(self):
-        """Poll each known node individually with READ.
+        """Poll all nodes with a single group READ.
 
-        Sends 1:READ, waits, 2:READ, waits — instead of ALL:READ which
-        routes through the GATT gateway's slow sequential handler.
+        Sends ALL:READ which the GATT gateway translates to a BLE Mesh
+        group send (0xC000).  All subscribed nodes respond individually.
         """
         self._poll_generation += 1
         if not self.nodes:
             return
-        node_ids = sorted(self.nodes.keys(), key=lambda x: int(x) if x.isdigit() else 999)
-        for node_id in node_ids:
-            if self.threshold_mw is None:
-                return
-            if not node_id.isdigit():
-                continue
-            await self.gateway.send_to_node(node_id, "READ", _silent=True)
-            await self.gateway._wait_node_response(node_id)
+        await self.gateway.send_to_node("ALL", "READ", _silent=True)
+        await self._wait_for_responses(timeout=3.0)
 
     async def _wait_for_responses(self, timeout: float = 3.0):
         """Wait until all responsive nodes report for this poll cycle, or timeout."""
@@ -936,8 +930,9 @@ class DCMonitorGateway:
                            _silent: bool = False):
         """Send command to a specific mesh node.
 
-        When node is 'ALL', expands to individual sends to each known node
-        (avoids the GATT gateway's slow sequential ALL handler + probe).
+        When node is 'ALL', sends a single ALL:COMMAND which the GATT
+        gateway translates to a BLE Mesh group send (0xC000).  All
+        subscribed nodes receive it simultaneously — O(1) instead of O(N).
 
         Args:
             node: Node ID (0-9) or "ALL"
@@ -945,30 +940,11 @@ class DCMonitorGateway:
             value: Optional value (e.g. duty percentage)
         """
         if str(node).upper() == "ALL":
-            # Expand ALL to individual sends — only to nodes that have responded
-            pm = self._power_manager
-            if pm and pm.nodes:
-                node_ids = sorted(pm.nodes.keys(),
-                                  key=lambda x: int(x) if x.isdigit() else 999)
-            elif self.known_nodes:
-                node_ids = sorted(self.known_nodes,
-                                  key=lambda x: int(x) if x.isdigit() else 999)
-            elif self.sensing_node_count > 0:
-                # Fall back to BLE scan count (probe addresses 1..N)
-                node_ids = [str(i) for i in range(1, self.sensing_node_count + 1)]
+            if value is not None:
+                cmd = f"ALL:{command}:{value}"
             else:
-                self.log("No nodes discovered — send 'read' to a specific node first")
-                return False
-            for nid in node_ids:
-                if not nid.isdigit():
-                    continue
-                if value is not None:
-                    cmd = f"{nid}:{command}:{value}"
-                else:
-                    cmd = f"{nid}:{command}"
-                await self.send_command(cmd, _silent=_silent)
-                await self._wait_node_response(nid)  # Move on as soon as node responds
-            return True
+                cmd = f"ALL:{command}"
+            return await self.send_command(cmd, _silent=_silent)
 
         if value is not None:
             cmd = f"{node}:{command}:{value}"
