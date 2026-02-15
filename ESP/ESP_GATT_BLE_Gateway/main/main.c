@@ -67,6 +67,7 @@ static uint8_t dev_uuid[16] = {0xdd, 0xdd};
 // Provisioner assigns: NODE-0 = 0x0005, NODE-1 = 0x0006, etc.
 #define NODE_BASE_ADDR 0x0005
 #define MAX_NODES 10
+#define MESH_GROUP_ADDR 0xC000 // Group address for ALL commands
 
 static uint16_t known_nodes[MAX_NODES] = {0}; // Unicast addrs of discovered nodes
 static int known_node_count = 0;
@@ -351,19 +352,24 @@ static esp_err_t send_mesh_onoff(uint16_t target_addr, uint8_t onoff) {
 // ============== Send Vendor Command ==============
 static esp_err_t send_vendor_command(uint16_t target_addr, const char *cmd,
                                      uint16_t len) {
-  // Wait for previous send to complete (serializes mesh sends)
-  int wait_loops = 0;
-  while (vnd_send_busy && wait_loops < 50) {  // 50 * 100ms = 5s max wait
-    TickType_t elapsed = xTaskGetTickCount() - vnd_send_start_tick;
-    if (elapsed > pdMS_TO_TICKS(VND_SEND_TIMEOUT_MS)) {
-      ESP_LOGW(TAG, "Send busy timeout (%lu ms), clearing flag",
-               (unsigned long)(elapsed * portTICK_PERIOD_MS));
-      vnd_send_busy = false;
-      vnd_send_target_addr = 0x0000;
-      break;
+  bool is_group = (target_addr == MESH_GROUP_ADDR);
+
+  // Skip busy-wait for group sends — multiple nodes respond asynchronously
+  if (!is_group) {
+    // Wait for previous send to complete (serializes mesh sends)
+    int wait_loops = 0;
+    while (vnd_send_busy && wait_loops < 50) {  // 50 * 100ms = 5s max wait
+      TickType_t elapsed = xTaskGetTickCount() - vnd_send_start_tick;
+      if (elapsed > pdMS_TO_TICKS(VND_SEND_TIMEOUT_MS)) {
+        ESP_LOGW(TAG, "Send busy timeout (%lu ms), clearing flag",
+                 (unsigned long)(elapsed * portTICK_PERIOD_MS));
+        vnd_send_busy = false;
+        vnd_send_target_addr = 0x0000;
+        break;
+      }
+      vTaskDelay(pdMS_TO_TICKS(100));
+      wait_loops++;
     }
-    vTaskDelay(pdMS_TO_TICKS(100));
-    wait_loops++;
   }
 
   esp_ble_mesh_msg_ctx_t ctx = {0};
@@ -374,17 +380,21 @@ static esp_err_t send_vendor_command(uint16_t target_addr, const char *cmd,
 
   ESP_LOGI(TAG, "Vendor SEND to 0x%04x: %.*s", target_addr, len, cmd);
 
-  vnd_send_busy = true;
-  vnd_send_target_addr = target_addr;
-  vnd_send_start_tick = xTaskGetTickCount();
+  if (!is_group) {
+    vnd_send_busy = true;
+    vnd_send_target_addr = target_addr;
+    vnd_send_start_tick = xTaskGetTickCount();
+  }
 
   esp_err_t err = esp_ble_mesh_client_model_send_msg(vendor_client.model, &ctx,
                                             VND_OP_SEND, len, (uint8_t *)cmd,
                                             5000, true, ROLE_NODE);
   if (err != ESP_OK) {
     ESP_LOGE(TAG, "Vendor send_msg failed: %d", err);
-    vnd_send_busy = false;
-    vnd_send_target_addr = 0x0000;
+    if (!is_group) {
+      vnd_send_busy = false;
+      vnd_send_target_addr = 0x0000;
+    }
   }
   return err;
 }
@@ -450,13 +460,22 @@ static void custom_model_cb(esp_ble_mesh_model_cb_event_t event,
     }
     break;
 
-  case ESP_BLE_MESH_CLIENT_MODEL_SEND_TIMEOUT_EVT:
-    ESP_LOGW(TAG, "Vendor message timeout (target was 0x%04x)", vnd_send_target_addr);
+  case ESP_BLE_MESH_CLIENT_MODEL_SEND_TIMEOUT_EVT: {
+    // For group sends, vnd_send_target_addr is 0x0000 (not tracked).
+    // The SDK fires a timeout because it expects a single response, but
+    // group responses arrive individually via STATUS callback — so this
+    // timeout is expected and harmless.  Silently ignore it.
+    uint16_t timeout_target = vnd_send_target_addr;
+    if (timeout_target == 0x0000 && !vnd_send_busy) {
+      ESP_LOGI(TAG, "Group send timeout (expected, responses already received)");
+      break;
+    }
+    ESP_LOGW(TAG, "Vendor message timeout (target was 0x%04x)", timeout_target);
     // If this was a probe to an undiscovered address, mark discovery complete
     // so we don't waste 5s probing on every future ALL command.
-    if (vnd_send_target_addr > NODE_BASE_ADDR + known_node_count) {
+    if (timeout_target > NODE_BASE_ADDR + known_node_count) {
       discovery_complete = true;
-      ESP_LOGI(TAG, "Discovery complete (no node at 0x%04x)", vnd_send_target_addr);
+      ESP_LOGI(TAG, "Discovery complete (no node at 0x%04x)", timeout_target);
     }
     vnd_send_busy = false;
     vnd_send_target_addr = 0x0000;
@@ -466,8 +485,43 @@ static void custom_model_cb(esp_ble_mesh_model_cb_event_t event,
       gatt_notify_sensor_data("ERROR:MESH_TIMEOUT", 18);
     }
     break;
+  }
+
+  case ESP_BLE_MESH_CLIENT_MODEL_RECV_PUBLISH_MSG_EVT:
+    // Client model matched a response to a TX context (e.g. group send reply)
+    if (param->client_recv_publish_msg.opcode == VND_OP_STATUS) {
+      char buf[SENSOR_DATA_MAX_LEN];
+      uint16_t len = param->client_recv_publish_msg.length;
+      uint16_t src = param->client_recv_publish_msg.ctx->addr;
+
+      if (len >= sizeof(buf))
+        len = sizeof(buf) - 1;
+      int node_id = (src >= NODE_BASE_ADDR) ? (src - NODE_BASE_ADDR) : 0;
+
+      if (src == vnd_send_target_addr || vnd_send_target_addr == 0x0000) {
+        vnd_send_busy = false;
+        vnd_send_target_addr = 0x0000;
+      }
+
+      register_known_node(src);
+
+      int hdr_len = snprintf(buf, sizeof(buf), "NODE%d:DATA:", node_id);
+      if (hdr_len + len < sizeof(buf)) {
+        memcpy(buf + hdr_len, param->client_recv_publish_msg.msg, len);
+        buf[hdr_len + len] = '\0';
+        gatt_notify_sensor_data(buf, hdr_len + len);
+      }
+
+      ESP_LOGI(TAG, "Vendor STATUS (publish) from 0x%04x (%d bytes)", src, len);
+
+      if (monitor_target_addr != 0) {
+        monitor_waiting_response = false;
+      }
+    }
+    break;
 
   default:
+    ESP_LOGD(TAG, "Unhandled model event: 0x%02x", event);
     break;
   }
 }
@@ -605,21 +659,8 @@ static void process_gatt_command(const char *cmd, uint16_t len) {
   // Route through vendor model if bound, else fall back to OnOff
   if (vnd_bound) {
     if (is_all) {
-      // Send to all known (previously responded) nodes
-      for (int i = 0; i < known_node_count; i++) {
-        send_vendor_command(known_nodes[i], pico_cmd, strlen(pico_cmd));
-        vTaskDelay(pdMS_TO_TICKS(2500)); // Must exceed relay round-trip time
-      }
-      // Auto-discover: probe the next address beyond known nodes, but
-      // stop once a probe times out (no more nodes to find).
-      // discovery_complete is reset if a new node is manually discovered.
-      if (!discovery_complete) {
-        uint16_t probe_addr = NODE_BASE_ADDR + known_node_count + 1;
-        if (probe_addr <= NODE_BASE_ADDR + MAX_NODES) {
-          ESP_LOGI(TAG, "Probing for new node at 0x%04x", probe_addr);
-          send_vendor_command(probe_addr, pico_cmd, strlen(pico_cmd));
-        }
-      }
+      // Single group send — all subscribed nodes receive simultaneously
+      send_vendor_command(MESH_GROUP_ADDR, pico_cmd, strlen(pico_cmd));
     } else {
       send_vendor_command(target_addr, pico_cmd, strlen(pico_cmd));
     }

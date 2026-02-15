@@ -56,7 +56,7 @@ static uint8_t dev_uuid[16] = {0xdd, 0xdd};
 #define I2C_SDA_PIN GPIO_NUM_6 // Wire to INA260 SDA
 #define I2C_SCL_PIN GPIO_NUM_7 // Wire to INA260 SCL
 #define I2C_FREQ_HZ 400000
-#define INA260_ADDR 0x45 // A0=GND, A1=GND (found by I2C scan)
+#define INA260_ADDR 0x45 // A0=GND, A1=GND (found by I2C scan) COM11 40 COM14 45
 
 // INA260 registers
 #define INA260_REG_CONFIG 0x00
@@ -616,6 +616,12 @@ static void custom_model_cb(esp_ble_mesh_model_cb_event_t event,
 
       // Send response back through mesh immediately
       esp_ble_mesh_msg_ctx_t ctx = *param->model_operation.ctx;
+      // When message arrived via group address (0xC000), recv_dst is the
+      // group addr.  The server send uses recv_dst as the reply source,
+      // but we can't send FROM a group address — override with our unicast.
+      if (ctx.recv_dst != node_state.addr) {
+        ctx.recv_dst = node_state.addr;
+      }
       esp_err_t err = esp_ble_mesh_server_model_send_msg(
           &vnd_models[0], &ctx, VND_OP_STATUS, resp_len, (uint8_t *)response);
 
