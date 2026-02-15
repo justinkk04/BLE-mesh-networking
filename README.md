@@ -39,14 +39,20 @@ INA260 sensor + Load Circuit
 
 ## Roadmap
 
-- **v0.5.0 (Complete):** PowerManager refinement, dynamic discovery, stable firmware.
+- **v0.5.0 (Complete):** Removed Pico 2W (reduced latency 500ms→50ms, simplified architecture). PowerManager refinement, dynamic discovery.
 - **v0.6.0 (Current):** Group addressing implemented. Poll time reduced from O(N) to O(1).
 - **v0.7.0 (Next):** Self-healing gateway failover.
 - **v1.0.0:** Final stress testing and release.
 
 ## Legacy Architecture (v0.3.0)
 
-> **Note:** This architecture is preserved for historical reference. The current v0.5.0+ system replaces the Pico 2W with direct ESP32-C6 I2C sensing.
+> **Note:** This architecture is preserved for historical reference. The system switched to direct ESP32-C6 I2C sensing in v0.5.0 to eliminate the Pico UART bridge.
+>
+> **Reasons for Removal:**
+>
+> 1. **Latency:** Reduced round-trip time from ~500ms-2s (variable) to <50ms (synchronous).
+> 2. **Reliability:** Eliminated UART bridge issues (stuck flags, mismatched responses).
+> 3. **Complexity:** Simplified from a 7-hop async path to a 4-hop synchronous mesh callback.
 
 In v0.3.0, the system used a 3-tier architecture:
 
