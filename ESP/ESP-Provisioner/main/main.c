@@ -30,6 +30,8 @@
 #define VND_MODEL_ID_CLIENT 0x0000
 #define VND_MODEL_ID_SERVER 0x0001
 
+#define MESH_GROUP_ADDR 0xC000 // Group address for ALL commands
+
 #define PROV_OWN_ADDR 0x0001 // Provisioner's own address
 
 #define MSG_SEND_TTL 3
@@ -62,6 +64,7 @@ typedef struct {
   bool cli_bound;
   bool vnd_srv_bound;
   bool vnd_cli_bound;
+  bool vnd_srv_subscribed; // Vendor Server subscribed to group 0xC000
 } mesh_node_info_t;
 
 #define MAX_NODES 10
@@ -305,6 +308,31 @@ static esp_err_t bind_vendor_model(mesh_node_info_t *node, uint16_t model_id) {
   return esp_ble_mesh_config_client_set_state(&common, &set);
 }
 
+// Subscribe a node's vendor server model to the group address
+static esp_err_t subscribe_vendor_model_to_group(mesh_node_info_t *node) {
+  esp_ble_mesh_client_common_param_t common = {0};
+  esp_ble_mesh_cfg_client_set_state_t set = {0};
+
+  ESP_LOGI(TAG, "Subscribing Vnd Server on 0x%04x to group 0x%04x",
+           node->unicast, MESH_GROUP_ADDR);
+
+  common.opcode = ESP_BLE_MESH_MODEL_OP_MODEL_SUB_ADD;
+  common.model = &root_models[1]; // CFG_CLI
+  common.ctx.net_idx = prov_key.net_idx;
+  common.ctx.app_idx = prov_key.app_idx;
+  common.ctx.addr = node->unicast;
+  common.ctx.send_ttl = MSG_SEND_TTL;
+  common.msg_timeout = MSG_TIMEOUT;
+  common.msg_role = ROLE_PROVISIONER;
+
+  set.model_sub_add.element_addr = node->unicast;
+  set.model_sub_add.sub_addr = MESH_GROUP_ADDR;
+  set.model_sub_add.model_id = VND_MODEL_ID_SERVER;
+  set.model_sub_add.company_id = CID_ESP;
+
+  return esp_ble_mesh_config_client_set_state(&common, &set);
+}
+
 // Bind the next unbound model in priority order, or log FULLY CONFIGURED
 static void bind_next_model(mesh_node_info_t *node) {
   esp_err_t err;
@@ -325,6 +353,10 @@ static void bind_next_model(mesh_node_info_t *node) {
     err = bind_vendor_model(node, VND_MODEL_ID_CLIENT);
     if (err)
       ESP_LOGE(TAG, "Bind Vendor Client failed: %d", err);
+  } else if (node->has_vnd_srv && !node->vnd_srv_subscribed) {
+    err = subscribe_vendor_model_to_group(node);
+    if (err)
+      ESP_LOGE(TAG, "Subscribe Vnd Server to group failed: %d", err);
   } else {
     ESP_LOGI(TAG, "========== NODE 0x%04x FULLY CONFIGURED ==========",
              node->unicast);
@@ -631,10 +663,11 @@ static void config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
 
     // For Model App Bind, a status error means model doesn't exist on the node.
     // Skip to the next model in the bind chain instead of giving up.
-    if (opcode == ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND) {
+    if (opcode == ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND ||
+        opcode == ESP_BLE_MESH_MODEL_OP_MODEL_SUB_ADD) {
       node = get_node_info(addr);
       if (node) {
-        ESP_LOGW(TAG, "Bind failed, trying next model...");
+        ESP_LOGW(TAG, "Config op failed, trying next step...");
         bind_next_model(node);
       }
     }
@@ -703,6 +736,12 @@ static void config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
 
       // Chain to next unbound model
       bind_next_model(node);
+    } else if (opcode == ESP_BLE_MESH_MODEL_OP_MODEL_SUB_ADD) {
+      ESP_LOGI(TAG, "Group subscription added on 0x%04x", addr);
+      if (node) {
+        node->vnd_srv_subscribed = true;
+        bind_next_model(node); // Chains to "FULLY CONFIGURED"
+      }
     }
     break;
 
