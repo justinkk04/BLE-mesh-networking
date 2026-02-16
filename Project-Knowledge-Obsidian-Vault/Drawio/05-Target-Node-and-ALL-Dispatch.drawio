@@ -1,0 +1,58 @@
+<mxfile host="65bd71144e">
+    <diagram id="target-dispatch-01" name="Target Node and ALL Dispatch">
+        <mxGraphModel dx="1464" dy="1120" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1000" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="start" value="User command in TUI/CLI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="670" y="40" width="300" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="settarget" value="node 1 or node ALL" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="700" y="150" width="240" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="sendcmd" value="send_to_node(node, command, value)" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="250" width="340" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="d1" value="node == ALL?" style="rhombus;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="725" y="370" width="190" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="single" value="build: 1:READ&#10;or 2:DUTY:50" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="390" y="530" width="280" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="all" value="build: ALL:READ&#10;or ALL:DUTY:50" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="970" y="530" width="280" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="meshgroup" value="Gateway maps ALL to&#10;group 0xC000" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="970" y="660" width="280" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="end" value="Responses parsed in&#10;notification_handler()" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="790" width="340" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" style="endArrow=classic;html=1;" parent="1" source="start" target="settarget" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" style="endArrow=classic;html=1;" parent="1" source="settarget" target="sendcmd" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" style="endArrow=classic;html=1;" parent="1" source="sendcmd" target="d1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" value="No" style="endArrow=classic;html=1;" parent="1" source="d1" target="single" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5" value="Yes" style="endArrow=classic;html=1;" parent="1" source="d1" target="all" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e6" style="endArrow=classic;html=1;" parent="1" source="all" target="meshgroup" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e7" style="endArrow=classic;html=1;" parent="1" source="single" target="end" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e8" style="endArrow=classic;html=1;" parent="1" source="meshgroup" target="end" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

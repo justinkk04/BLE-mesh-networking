@@ -1,0 +1,224 @@
+{
+  "main": {
+    "id": "0fa2782487e79e38",
+    "type": "split",
+    "children": [
+      {
+        "id": "6f4a326ae138c9f1",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "cc6a736001679814",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Concepts/Self-Healing-and-Auto-Rejoin.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Self-Healing-and-Auto-Rejoin"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "d6883dd2e1b8ba9c",
+    "type": "split",
+    "children": [
+      {
+        "id": "aa1c45e4713a17a5",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "89dd1229a1ed2e8f",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "3f58f2ea55fba8f0",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "95f3e82659239a4f",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "c8bc4b97e31d1934",
+    "type": "split",
+    "children": [
+      {
+        "id": "38ae43064a8cb4c6",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "7e56aee9ef398d92",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Concepts/Self-Healing-and-Auto-Rejoin.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for Self-Healing-and-Auto-Rejoin"
+            }
+          },
+          {
+            "id": "8ba923de4bfb0733",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Concepts/Self-Healing-and-Auto-Rejoin.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from Self-Healing-and-Auto-Rejoin"
+            }
+          },
+          {
+            "id": "3517076a7d228373",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "13fc140667dbafc1",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "8376e5a0bd8e8415",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Concepts/Self-Healing-and-Auto-Rejoin.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Self-Healing-and-Auto-Rejoin"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "cc6a736001679814",
+  "lastOpenFiles": [
+    "How-To-Actually-Learn-This-Repo.md",
+    "00-Start-Here.md",
+    "Concepts/Self-Healing-and-Auto-Rejoin.md",
+    "Drawio/10-Power-Loss-Auto-Rejoin.drawio",
+    "Drawio/09-RAMP-One-vs-ALL.drawio",
+    "Drawio/08-Relay-Out-of-Range.drawio",
+    "Drawio/07-Provisioning-Lifecycle.drawio",
+    "Drawio/01-System-Architecture.drawio",
+    "Flows/Power-Loss-Auto-Rejoin-Flow.md",
+    "Flows/RAMP-One-vs-ALL-Flow.md",
+    "Flows/Relay-Out-of-Range-Flow.md",
+    "Components/ESP-GATT-Gateway-Map.md",
+    "Flows/Provisioning-Lifecycle-Flow.md",
+    "Concepts/Relay-Behavior-and-When-It-Activates.md",
+    "Concepts/WireGuard-Concepts.md",
+    "ESP-IDF/ESP-GATT-Gateway.md",
+    "Beginner-Track.md",
+    "01-Learning-Path.md",
+    "Labs/Hands-On-Lab-1-Trace-READ.md",
+    "Flows/End-to-End-READ-Flow.md",
+    "Cheat-Sheets/C-Basics-For-This-Repo.md",
+    "Welcome.md",
+    "Concepts/Roles-Server-Client-Gateway-Explained.md",
+    "Debugging/Debugging-Index.md",
+    "Concepts/Why-BLE-Mesh-Hybrid-Star-Mesh.md",
+    "Drawio/06-WireGuard-SSH-Remote-Control.drawio",
+    "Drawio/05-Target-Node-and-ALL-Dispatch.drawio",
+    "Drawio/04-Scan-Connect-By-Address.drawio",
+    "Architecture/Remote-Access-WireGuard-and-SSH.md",
+    "Python-Gateway/Command-Feature-Reference.md",
+    "Flows/Target-Node-and-ALL-Flow.md",
+    "Flows/Scan-and-Connect-By-Address-Flow.md",
+    "Concepts/Provisioning-Explained.md",
+    "Drawio/03-Threshold-PowerManager.drawio",
+    "Drawio/02-READ-Sequence.drawio"
+  ]
+}

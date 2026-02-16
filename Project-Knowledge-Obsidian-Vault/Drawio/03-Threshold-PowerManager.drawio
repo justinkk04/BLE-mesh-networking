@@ -1,0 +1,73 @@
+<mxfile host="65bd71144e">
+    <diagram id="pm-flow-01" name="Threshold PowerManager Flow">
+        <mxGraphModel dx="1638" dy="922" grid="1" gridSize="10" guides="0" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2000" pageHeight="2000" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="a1" value="&lt;font color=&quot;#000000&quot;&gt;Set threshold (mW)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="740" y="240" width="260" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="a2" value="poll_loop() starts" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="740" y="410" width="260" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="a3" value="_poll_all_nodes()&#10;send ALL:READ" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="740" y="540" width="260" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="a4" value="_wait_for_responses()" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="740" y="760" width="260" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="a5" value="&lt;font color=&quot;#000000&quot;&gt;_evaluate_and_adjust()&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="760" width="260" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="d1" value="Priority node set?" style="rhombus;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="390" y="1040" width="200" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="a6" value="&lt;font color=&quot;#000000&quot;&gt;_balance_proportional()&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="1230" width="250" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="a7" value="&lt;font color=&quot;#000000&quot;&gt;_balance_with_priority()&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="920" width="250" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="a8" value="&lt;font color=&quot;#000000&quot;&gt;send duty nudges&lt;br&gt;repeat while threshold active&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
+                    <mxGeometry x="1210" y="1050" width="260" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" style="endArrow=classic;html=1;" parent="1" source="a1" target="a2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" style="endArrow=classic;html=1;" parent="1" source="a2" target="a3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" style="endArrow=classic;html=1;" parent="1" source="a3" target="a4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" style="endArrow=classic;html=1;" parent="1" source="a4" target="a5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5" style="endArrow=classic;html=1;" parent="1" source="a5" target="d1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e6" value="No" style="endArrow=classic;html=1;" parent="1" source="d1" target="a6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e7" value="Yes" style="endArrow=classic;html=1;" parent="1" source="d1" target="a7" edge="1">
+                    <mxGeometry x="0.0196" y="3" relative="1" as="geometry">
+                        <mxPoint y="1" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e8" style="endArrow=classic;html=1;" parent="1" source="a6" target="a8" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e9" style="endArrow=classic;html=1;" parent="1" source="a7" target="a8" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e10" value="loop" style="endArrow=classic;dashed=1;html=1;" parent="1" source="a8" target="a3" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1340" y="580"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

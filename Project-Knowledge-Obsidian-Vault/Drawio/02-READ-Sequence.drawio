@@ -1,0 +1,64 @@
+<mxfile host="65bd71144e">
+    <diagram id="read-seq-01" name="READ Sequence">
+        <mxGraphModel dx="2278" dy="1742" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1000" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="lane1" value="&lt;font color=&quot;#000000&quot;&gt;Pi gateway.py&lt;/font&gt;" style="swimlane;whiteSpace=wrap;html=1;rounded=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="30" width="520" height="860" as="geometry"/>
+                </mxCell>
+                <mxCell id="b1" value="1) send_to_node()&#10;`1:READ`" style="rounded=1;whiteSpace=wrap;html=1;" parent="lane1" vertex="1">
+                    <mxGeometry x="110" y="80" width="300" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="b8" value="8) notification_handler()&#10;parse + update state/UI" style="rounded=1;whiteSpace=wrap;html=1;" parent="lane1" vertex="1">
+                    <mxGeometry x="110" y="540" width="300" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="lane2" value="&lt;font color=&quot;#000000&quot;&gt;ESP GATT Gateway&lt;/font&gt;" style="swimlane;whiteSpace=wrap;html=1;rounded=0;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
+                    <mxGeometry x="620" y="30" width="520" height="860" as="geometry"/>
+                </mxCell>
+                <mxCell id="b2" value="2) process_gatt_command()&#10;map READ -&gt; `read`" style="rounded=1;whiteSpace=wrap;html=1;" parent="lane2" vertex="1">
+                    <mxGeometry x="110" y="80" width="300" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="b3" value="3) send_vendor_command()&#10;VND_OP_SEND" style="rounded=1;whiteSpace=wrap;html=1;" parent="lane2" vertex="1">
+                    <mxGeometry x="110" y="230" width="300" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="b7" value="7) gatt_notify_sensor_data()&#10;`NODE1:DATA:...`" style="rounded=1;whiteSpace=wrap;html=1;" parent="lane2" vertex="1">
+                    <mxGeometry x="110" y="540" width="300" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="lane3" value="&lt;font color=&quot;#000000&quot;&gt;ESP Sensing Node&lt;/font&gt;" style="swimlane;whiteSpace=wrap;html=1;rounded=0;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="1200" y="30" width="520" height="860" as="geometry"/>
+                </mxCell>
+                <mxCell id="b4" value="4) custom_model_cb()&#10;receive VND_OP_SEND" style="rounded=1;whiteSpace=wrap;html=1;" parent="lane3" vertex="1">
+                    <mxGeometry x="110" y="240" width="300" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="b5" value="5) process_command()&#10;read INA260 + format payload" style="rounded=1;whiteSpace=wrap;html=1;" parent="lane3" vertex="1">
+                    <mxGeometry x="110" y="390" width="300" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="b6" value="6) send VND_OP_STATUS&#10;back to gateway" style="rounded=1;whiteSpace=wrap;html=1;" parent="lane3" vertex="1">
+                    <mxGeometry x="110" y="540" width="300" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" value="" style="endArrow=classic;html=1;" parent="1" source="b1" target="b2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" value="" style="endArrow=classic;html=1;" parent="1" source="b2" target="b3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" value="" style="endArrow=classic;html=1;" parent="1" source="b3" target="b4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" value="" style="endArrow=classic;html=1;" parent="1" source="b4" target="b5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5" value="" style="endArrow=classic;html=1;" parent="1" source="b5" target="b6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e6" value="" style="endArrow=classic;html=1;" parent="1" source="b6" target="b7" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e7" value="" style="endArrow=classic;html=1;" parent="1" source="b7" target="b8" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

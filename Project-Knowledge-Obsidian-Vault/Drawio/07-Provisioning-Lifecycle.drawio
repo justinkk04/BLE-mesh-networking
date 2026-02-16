@@ -1,0 +1,61 @@
+<mxfile host="65bd71144e">
+    <diagram id="prov-life-01" name="Provisioning Lifecycle">
+        <mxGraphModel dx="1464" dy="1120" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="s1" value="Detect unprovisioned device&#10;(UUID prefix match)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="40" width="320" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="s2" value="Start provisioning&#10;assign unicast address" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="160" width="320" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="s3" value="Request composition data" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="280" width="320" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="s4" value="Parse models present" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="390" width="320" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="s5" value="Add AppKey to node" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="500" width="320" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="s6" value="Bind models in chain&#10;(OnOff/Vendor if present)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="610" width="320" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="s7" value="Subscribe Vendor Server&#10;to group 0xC000" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="740" width="320" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="s8" value="Node fully configured" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="870" width="320" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" style="endArrow=classic;html=1;" parent="1" source="s1" target="s2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" style="endArrow=classic;html=1;" parent="1" source="s2" target="s3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" style="endArrow=classic;html=1;" parent="1" source="s3" target="s4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" style="endArrow=classic;html=1;" parent="1" source="s4" target="s5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5" style="endArrow=classic;html=1;" parent="1" source="s5" target="s6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e6" style="endArrow=classic;html=1;" parent="1" source="s6" target="s7" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e7" style="endArrow=classic;html=1;" parent="1" source="s7" target="s8" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" value="Node fully configured" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#000000;" vertex="1" parent="1">
+                    <mxGeometry x="650" y="870" width="320" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="Subscribe Vendor Server&#10;to group 0xC000" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#000000;" vertex="1" parent="1">
+                    <mxGeometry x="650" y="740" width="320" height="90" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

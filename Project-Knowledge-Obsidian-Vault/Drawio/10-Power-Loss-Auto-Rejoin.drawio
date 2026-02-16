@@ -1,0 +1,23 @@
+<mxfile host="app.diagrams.net" modified="2026-02-16T00:00:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="auto-rejoin-01" name="Power Loss Auto Rejoin">
+    <mxGraphModel dx="1420" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="p0" value="Node running normally" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="650" y="40" width="300" height="70" as="geometry"/></mxCell>
+        <mxCell id="p1" value="Power loss / reboot" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1"><mxGeometry x="650" y="150" width="300" height="70" as="geometry"/></mxCell>
+        <mxCell id="p2" value="Boot firmware + open NVS" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1"><mxGeometry x="650" y="260" width="300" height="70" as="geometry"/></mxCell>
+        <mxCell id="p3" value="restore_node_state()&#xa;load saved mesh credentials/state" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="650" y="370" width="300" height="90" as="geometry"/></mxCell>
+        <mxCell id="p4" value="Mesh stack enabled&#xa;node reappears on mesh" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1"><mxGeometry x="650" y="500" width="300" height="80" as="geometry"/></mxCell>
+        <mxCell id="p5" value="Normal command/response flow resumes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="650" y="620" width="300" height="80" as="geometry"/></mxCell>
+        <mxCell id="p6" value="If state invalid, reprovision path required" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;" vertex="1" parent="1"><mxGeometry x="650" y="750" width="300" height="70" as="geometry"/></mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="p0" target="p1" style="endArrow=classic;html=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="p1" target="p2" style="endArrow=classic;html=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="p2" target="p3" style="endArrow=classic;html=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="p3" target="p4" style="endArrow=classic;html=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="p4" target="p5" style="endArrow=classic;html=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="p3" target="p6" style="endArrow=classic;dashed=1;html=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

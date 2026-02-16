@@ -1,0 +1,37 @@
+<mxfile host="65bd71144e">
+    <diagram id="wg-ssh-01" name="WireGuard SSH Remote Control">
+        <mxGraphModel dx="985" dy="523" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1000" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="laptop" value="Laptop (University)&#10;WireGuard client" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="90" y="340" width="260" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="internet" value="Internet" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="470" y="345" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="home" value="Home WireGuard Host&#10;(Server)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="340" width="260" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="pi" value="Pi 5&#10;SSH + gateway.py" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="1160" y="340" width="260" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="ble" value="Local BLE only&#10;Pi5 -&amp;gt; ESP GATT Gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="1160" y="620" width="260" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" value="WireGuard tunnel" style="endArrow=classic;html=1;" parent="1" source="laptop" target="internet" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" value="WG tunnel endpoint" style="endArrow=classic;html=1;" parent="1" source="internet" target="home" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" value="SSH over WG path" style="endArrow=classic;html=1;" parent="1" source="home" target="pi" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" value="run commands&#10;in gateway.py" style="endArrow=classic;html=1;" parent="1" source="pi" target="ble" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
