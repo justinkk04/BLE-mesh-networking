@@ -1,6 +1,6 @@
 # BLE Mesh DC Power Monitor
 
-**Version:** v0.6.0 (Group Addressing)
+**Version:** v0.6.1 (Relay Node)
 **Status:** Stable / In Development
 
 A self-healing BLE Mesh network for remote DC power monitoring and control. The system uses ESP32-C6 nodes to read INA260 sensors directly via I2C and control loads via PWM, bridged to a Raspberry Pi 5 gateway for automated power management.
@@ -14,6 +14,9 @@ Pi 5 (Python TUI Gateway)
 ESP32-C6 GATT Gateway
   |  BLE Mesh (Vendor Model 0x02E5)
   v
+ESP32-C6 Relay Node(s) ──── Extends range, TTL=7
+  |  (silent relay)
+  v
 ESP32-C6 Mesh Node(s)
   |  I2C (INA260) + LEDC PWM
   v
@@ -25,6 +28,7 @@ INA260 sensor + Load Circuit
 - **Direct Sensing:** ESP32-C6 reads INA260 voltage/current/power directly (no secondary MCU).
 - **Power Manager:** Equilibrium-based balancing algorithm maintains total power budget across N nodes.
 - **Group Addressing:** O(1) polling using BLE Mesh group broadcasts (0xC000) for massive efficiency gains.
+- **Relay Nodes:** Dedicated relay-only nodes extend mesh range with LED heartbeat and NVS auto-rejoin — no sensors, no vendor model.
 - **Dynamic Discovery:** Automatically detects sensing nodes vs relays from BLE scan.
 - **Event-Driven Pacing:** Fast command execution (~300ms/node) with no fixed delays.
 - **TUI Gateway:** Textual-based terminal UI with live node table, scrolling logs, and debug mode.
@@ -32,7 +36,10 @@ INA260 sensor + Load Circuit
 
 ## Project Structure
 
-- `ESP/` — ESP-IDF firmware for Provisioner, GATT Gateway, and Mesh Nodes.
+- `ESP/ESP-Provisioner/` — Auto-provisioner for all mesh nodes (UUID prefix `0xdd`).
+- `ESP/ESP_GATT_BLE_Gateway/` — Pi 5 ↔ Mesh bridge (GATT + Vendor Model).
+- `ESP/ESP-Mesh-Node-sensor-test/` — Sensing nodes (I2C INA260, PWM load control).
+- `ESP/ESP-Mesh-Relay-Node/` — Relay-only nodes (silent relay + LED heartbeat).
 - `gateway-pi5/` — Python 3 gateway script (CLI/TUI).
 - `Documentation/` — Historical docs and implementation details.
 - `MESH_IMPLEMENTATION.md` — Detailed technical documentation.
@@ -40,7 +47,8 @@ INA260 sensor + Load Circuit
 ## Roadmap
 
 - **v0.5.0 (Complete):** Removed Pico 2W (reduced latency 500ms→50ms, simplified architecture). PowerManager refinement, dynamic discovery.
-- **v0.6.0 (Current):** Group addressing implemented. Poll time reduced from O(N) to O(1).
+- **v0.6.0 (Complete):** Group addressing implemented. Poll time reduced from O(N) to O(1).
+- **v0.6.1 (Current):** Relay-only node for range extension and path redundancy.
 - **v0.7.0 (Next):** Self-healing gateway failover.
 - **v1.0.0:** Final stress testing and release.
 
