@@ -19,6 +19,8 @@ which forwards them to the targeted mesh node via BLE Mesh.
 
 import asyncio
 import argparse
+import json
+import os
 import re
 import sys
 import threading
@@ -133,7 +135,7 @@ class NodeState:
     voltage: float = 0.0       # V
     current: float = 0.0       # mA
     power: float = 0.0         # mW
-    last_seen: float = field(default_factory=time.monotonic)
+    last_seen: float = field(default_factory=time.time)
     responsive: bool = True
     poll_gen: int = 0          # Which poll cycle this data is from
 
@@ -151,7 +153,7 @@ class PowerManager:
 
     POLL_INTERVAL = 3.0    # Seconds between poll cycles
     READ_STAGGER = 2.5     # Seconds between READ commands (must exceed mesh SEND_COMP time)
-    STALE_TIMEOUT = 45.0   # Seconds before marking node unresponsive (relay round trips are slow)
+    STALE_TIMEOUT = 10.0   # Seconds before marking node unresponsive (relay round trips are slow)
     COOLDOWN = 5.0         # Seconds between adjustments (give mesh time to settle)
     HEADROOM_MW = 500.0    # Target buffer below threshold (budget = threshold - headroom)
     PRIORITY_WEIGHT = 2.0  # Priority node gets this many "shares" vs 1 for normal nodes
@@ -197,6 +199,7 @@ class PowerManager:
         self.gateway.log(
             f"[POWER] Threshold: {mw:.0f}mW → budget {budget:.0f}mW "
             f"({share:.0f}mW × {n} nodes)")
+        self.gateway._export_mesh_state()
 
     async def disable(self):
         """Disable power management and restore original duty cycles."""
@@ -214,6 +217,7 @@ class PowerManager:
                 await self.gateway._wait_node_response(ns.node_id)
             ns.commanded_duty = 0  # Reset commanded state
         self.gateway.log("[POWER] Threshold disabled")
+        self.gateway._export_mesh_state()
 
     def set_priority(self, node_id: str):
         """Set the priority node. Triggers immediate rebalance."""
@@ -231,6 +235,7 @@ class PowerManager:
                 f"others: {other_share:.0f}mW each")
         else:
             self.gateway.log(f"[POWER] Priority node: {node_id}")
+        self.gateway._export_mesh_state()
 
     def clear_priority(self):
         """Remove priority designation. Triggers immediate rebalance to equal shares."""
@@ -243,6 +248,7 @@ class PowerManager:
             self.gateway.log(f"[POWER] Priority cleared → equalizing at {share:.0f}mW each")
         else:
             self.gateway.log("[POWER] Priority cleared")
+        self.gateway._export_mesh_state()
 
     def set_target_duty(self, node_id: str, duty: int):
         """Record the user-requested duty for a node."""
@@ -252,6 +258,7 @@ class PowerManager:
         # Also sync commanded_duty so PM's mw_per_pct estimate stays accurate
         # when user changes duty while PM is active
         self.nodes[node_id].commanded_duty = duty
+        self.gateway._export_mesh_state()
 
     def status(self) -> str:
         """Return a human-readable status summary."""
@@ -322,7 +329,9 @@ class PowerManager:
         ns.voltage = voltage
         ns.current = current
         ns.power = power
-        ns.last_seen = time.monotonic()
+        ns.current = current
+        ns.power = power
+        ns.last_seen = time.time()
         ns.responsive = True
         ns.poll_gen = self._poll_generation
 
@@ -438,7 +447,7 @@ class PowerManager:
 
     def _mark_stale_nodes(self):
         """Mark nodes that haven't responded recently as unresponsive."""
-        now = time.monotonic()
+        now = time.time()
         for ns in self.nodes.values():
             if not ns.node_id.isdigit():
                 continue  # Skip phantom nodes like "ALL"
@@ -448,6 +457,7 @@ class PowerManager:
                     self.gateway.log(
                         f"[POWER] Node {ns.node_id} unresponsive ({age:.0f}s)")
                 ns.responsive = False
+        self.gateway._export_mesh_state()
 
     async def _evaluate_and_adjust(self):
         """Bidirectional equilibrium: nudge nodes toward their power budget share.
@@ -694,6 +704,91 @@ class DCMonitorGateway:
         self._node_events: dict[str, threading.Event] = {}  # Signaled when node responds
         self.known_nodes: set[str] = set()  # Node IDs that have actually responded with sensor data
         self.sensing_node_count = 0  # Set from BLE scan: total_mesh_devices - 1 (GATT gateway)
+        self._node_cache: dict[str, dict] = {}  # Last sensor data per node (for dashboard when PM is None)
+        self._dashboard_polling = False
+        self._dashboard_poll_active = False  # True only during the actual send/wait cycle
+        self._dashboard_poll_interval = 6.0  # seconds between ALL:READ for dashboard
+
+    def _export_mesh_state(self):
+        """Write current mesh state to JSON file for dashboard consumption."""
+        import json
+        from datetime import datetime
+
+        state = {
+            "timestamp": datetime.now().isoformat(),
+            "gateway": {
+                "connected": self.client is not None and self.client.is_connected,
+                "device_name": getattr(self.connected_device, 'name', None),
+                "device_address": getattr(self.connected_device, 'address', None),
+            },
+            "power_manager": None,
+            "nodes": {},
+            "relay_nodes": 0,
+            "sensing_node_count": self.sensing_node_count,
+        }
+
+        # Export PowerManager state if active
+        pm = self._power_manager
+        if pm:
+            state["power_manager"] = {
+                "active": pm.threshold_mw is not None,
+                "threshold_mw": pm.threshold_mw,
+                "budget_mw": (pm.threshold_mw * 0.9) if pm.threshold_mw else None,
+                "priority_node": pm.priority_node,
+                "total_power_mw": sum(ns.power for ns in pm.nodes.values()),
+            }
+            for nid, ns in pm.nodes.items():
+                state["nodes"][nid] = {
+                    "role": "sensing",
+                    "duty": ns.duty,
+                    "voltage": ns.voltage,
+                    "current": ns.current,
+                    "power": ns.power,
+                    "responsive": ns.responsive,
+                    "last_seen": ns.last_seen,
+                    "commanded_duty": ns.commanded_duty,
+                    "target_duty": ns.target_duty,
+                }
+        else:
+            # No PM — export cached sensor data for known nodes
+            now = time.time()
+            for nid in self.known_nodes:
+                if nid in self._node_cache:
+                    cached = dict(self._node_cache[nid])  # shallow copy
+                    if now - cached["last_seen"] > 30:
+                        cached["responsive"] = False
+                    state["nodes"][nid] = {"role": "sensing", **cached}
+                else:
+                    state["nodes"][nid] = {
+                        "role": "sensing",
+                        "duty": 0, "voltage": 0, "current": 0, "power": 0,
+                        "responsive": True, "last_seen": now,
+                        "commanded_duty": 0, "target_duty": 0,
+                    }
+
+        # Infer relay count
+        known_sensing = len(state["nodes"])
+        if self.sensing_node_count > known_sensing:
+            state["relay_nodes"] = self.sensing_node_count - known_sensing
+
+        # Topology hints for dashboard
+        # BLE Mesh routing is transparent — we can't detect which nodes
+        # actually route through relay nodes, so mark all sensing nodes
+        # as direct.  Relay nodes are shown separately in the graph.
+        state["topology"] = {"node_roles": {}}
+        for nid in state["nodes"]:
+            state["topology"]["node_roles"][nid] = "direct"
+
+        # Write atomically (write to temp, then rename)
+        state_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mesh_state.json")
+        tmp_file = state_file + ".tmp"
+        try:
+            with open(tmp_file, 'w') as f:
+                json.dump(state, f, indent=2)
+            os.replace(tmp_file, state_file)
+        except Exception as e:
+            # Don't crash gateway if dashboard export fails
+            pass
 
     def log(self, text: str, style: str = "", _from_thread: bool = False,
             _debug: bool = False):
@@ -802,50 +897,64 @@ class DCMonitorGateway:
                 # Track this node as known (it actually exists and responded)
                 self.known_nodes.add(node_id)
 
+                # Cache sensor data for dashboard (persists when PM is None)
+                self._node_cache[node_id] = {
+                    "duty": duty, "voltage": voltage,
+                    "current": current, "power": power,
+                    "responsive": True, "last_seen": time.time(),
+                    "commanded_duty": duty, "target_duty": duty,
+                }
+
                 # Feed PowerManager
                 if self._power_manager:
                     self._power_manager.on_sensor_data(
                         node_id, duty, voltage, current, power)
+
+                # Export state for dashboard
+                self._export_mesh_state()
 
                 # Signal that this node responded (unblocks event-driven pacing)
                 evt = self._node_events.get(node_id)
                 if evt:
                     evt.set()
 
-                # Post to TUI for UI update (always use call_from_thread — we're on bleak's thread)
-                if self.app and _HAS_TEXTUAL:
-                    try:
-                        msg = self.app.SensorDataMsg(
-                            node_id, duty, voltage, current, power,
-                            f"[{timestamp}] {node_tag} >> {payload}"
-                        )
-                        self.app.call_from_thread(self.app.post_message, msg)
-                    except Exception as e:
-                        print(f"  [{timestamp}] {node_tag} >> {payload}  [post error: {e}]")
-                else:
-                    print(f"[{timestamp}] {node_tag} >> {payload}")
+                # Post to TUI for UI update — suppress during background dashboard poll
+                _bg_poll = self._dashboard_poll_active
+                if not _bg_poll:
+                    if self.app and _HAS_TEXTUAL:
+                        try:
+                            msg = self.app.SensorDataMsg(
+                                node_id, duty, voltage, current, power,
+                                f"[{timestamp}] {node_tag} >> {payload}"
+                            )
+                            self.app.call_from_thread(self.app.post_message, msg)
+                        except Exception as e:
+                            print(f"  [{timestamp}] {node_tag} >> {payload}  [post error: {e}]")
+                    else:
+                        print(f"[{timestamp}] {node_tag} >> {payload}")
             else:
                 self.log(f"[{timestamp}] {node_tag} >> {payload}", _from_thread=True)
 
         elif decoded.startswith("ERROR:"):
-            # Suppress MESH_TIMEOUT during PM polling — it's just discovery probes
+            # Suppress during PM polling or dashboard background poll
             pm = self._power_manager
-            if pm and pm._polling:
+            if (pm and pm._polling) or self._dashboard_poll_active:
                 pass  # Swallow errors during background polling (reduces TUI noise)
             else:
                 self.log(f"[{timestamp}] !! {decoded}", style="bold red", _from_thread=True)
         elif decoded.startswith("SENT:"):
-            # Only show in debug mode
-            if self.app and _HAS_TEXTUAL:
-                if self.app.debug_mode:
-                    self.log(f"[{timestamp}] -> {decoded}", style="dim", _from_thread=True)
-            else:
-                print(f"[{timestamp}] -> {decoded}")
+            # Only show in debug mode, suppress during dashboard poll
+            if not self._dashboard_poll_active:
+                if self.app and _HAS_TEXTUAL:
+                    if self.app.debug_mode:
+                        self.log(f"[{timestamp}] -> {decoded}", style="dim", _from_thread=True)
+                else:
+                    print(f"[{timestamp}] -> {decoded}")
         elif decoded.startswith("MESH_READY"):
             self.log(f"[{timestamp}] {decoded}", _from_thread=True)
         elif decoded.startswith("TIMEOUT:"):
             pm = self._power_manager
-            if pm and pm._polling:
+            if (pm and pm._polling) or self._dashboard_poll_active:
                 pass  # Swallow timeouts during background polling
             else:
                 self.log(f"[{timestamp}] !! {decoded}", style="yellow", _from_thread=True)
@@ -881,6 +990,7 @@ class DCMonitorGateway:
         mtu = self.client.mtu_size
         self.log(f"MTU: {mtu}")
 
+        self._export_mesh_state()
         return True
 
     async def disconnect(self):
@@ -893,6 +1003,7 @@ class DCMonitorGateway:
                 pass
             self.log("Disconnected")
         self._chunk_buf = ""  # Clear stale partial data on disconnect
+        self._export_mesh_state()
 
     async def send_command(self, cmd: str, _silent: bool = False):
         """Send raw command string to GATT gateway"""
@@ -987,6 +1098,36 @@ class DCMonitorGateway:
     async def read_sensor(self, node: str):
         """Request single sensor reading from a mesh node"""
         return await self.send_to_node(node, "READ")
+
+    async def _dashboard_poll_loop(self):
+        """Background poll loop — sends ALL:READ periodically for the dashboard.
+
+        Only runs when PM is NOT active (PM has its own poll loop).
+        Keeps _node_cache fresh so the web dashboard has live data.
+        """
+        self._dashboard_polling = True
+        try:
+            while self._dashboard_polling:
+                # Skip if PM is running its own poll
+                if self._power_manager and self._power_manager.threshold_mw is not None:
+                    await asyncio.sleep(self._dashboard_poll_interval)
+                    continue
+
+                # Skip if not connected
+                if not self.client or not self.client.is_connected:
+                    await asyncio.sleep(self._dashboard_poll_interval)
+                    continue
+
+                self._dashboard_poll_active = True
+                await self.send_to_node("ALL", "READ", _silent=True)
+                await asyncio.sleep(4.0)  # Wait for responses
+                self._dashboard_poll_active = False
+                self._export_mesh_state()
+                await asyncio.sleep(2.0)  # Short gap before next cycle
+        except asyncio.CancelledError:
+            pass
+        finally:
+            self._dashboard_polling = False
 
     async def start_monitor(self, node: str):
         """Start continuous monitoring on a mesh node"""
@@ -1266,8 +1407,23 @@ if _HAS_TEXTUAL:
                     style="bold green")
                 self._connected = True
                 self.update_status()
+
+                # Auto-discover mesh nodes for the dashboard
+                self.log_message("Auto-discovering mesh nodes...")
+                await bt.submit_async(asyncio.sleep(1.0))
+                await bt.submit_async(gw.send_to_node("ALL", "READ", _silent=True))
+
+                # Start background dashboard poll loop
+                self.start_dashboard_poll()
             else:
                 self.log_message("Connection failed", style="bold red")
+
+        @work(exclusive=True, group="dashboard_poll")
+        async def start_dashboard_poll(self) -> None:
+            """Run dashboard poll loop on the BLE thread."""
+            gw = self.gateway
+            bt = self._ble_thread
+            await bt.submit_async(gw._dashboard_poll_loop())
 
         # ---- Command Handling ----
 
@@ -1594,6 +1750,8 @@ if _HAS_TEXTUAL:
 
         def on_unmount(self) -> None:
             """Clean up BLE thread when app exits."""
+            self.gateway._dashboard_polling = False
+            self.workers.cancel_group(self, "dashboard_poll")
             if self._ble_thread:
                 try:
                     if self.gateway.client and self.gateway.client.is_connected:
@@ -1683,6 +1841,15 @@ async def _run_cli(args, node: str):
     if not await gateway.connect_to_node(device):
         return
 
+    # Derive sensing node count
+    gateway.sensing_node_count = max(0, len(devices) - 1)
+
+    # Auto-discover mesh nodes
+    print("  Auto-discovering mesh nodes...")
+    await asyncio.sleep(1.0)
+    await gateway.send_to_node("ALL", "READ", _silent=True)
+    await asyncio.sleep(3.0)
+
     # Handle one-shot CLI commands
     if args.stop:
         await gateway.stop_node(node)
@@ -1709,7 +1876,13 @@ async def _run_cli(args, node: str):
             pass
     else:
         # Legacy interactive mode (--no-tui)
-        await gateway.interactive_mode(default_node=node)
+        # Start background dashboard poll
+        poll_task = asyncio.ensure_future(gateway._dashboard_poll_loop())
+        try:
+            await gateway.interactive_mode(default_node=node)
+        finally:
+            gateway._dashboard_polling = False
+            poll_task.cancel()
 
     await gateway.disconnect()
 
