@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="robust-schem-01" name="Detailed Failsafe Schematic (No Caps)">
-        <mxGraphModel dx="1464" dy="1120" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+        <mxGraphModel dx="1360" dy="653" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -163,7 +163,7 @@
                         <mxPoint x="919" y="279" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="59" value="R3&amp;nbsp; 51K" style="pointerEvents=1;verticalLabelPosition=middle;shadow=0;dashed=0;align=left;html=1;verticalAlign=middle;shape=mxgraph.electrical.resistors.resistor_2;strokeColor=#FFFFFF;strokeWidth=2;fontFamily=Helvetica;fontSize=13;fillColor=#67567D;direction=north;horizontal=1;labelPosition=right;labelBorderColor=none;" parent="1" vertex="1">
+                <mxCell id="59" value="R3 10k" style="pointerEvents=1;verticalLabelPosition=middle;shadow=0;dashed=0;align=left;html=1;verticalAlign=middle;shape=mxgraph.electrical.resistors.resistor_2;strokeColor=#FFFFFF;strokeWidth=2;fontFamily=Helvetica;fontSize=13;fillColor=#67567D;direction=north;horizontal=1;labelPosition=right;labelBorderColor=none;" parent="1" vertex="1">
                     <mxGeometry x="908" y="360" width="20" height="100" as="geometry"/>
                 </mxCell>
                 <mxCell id="64" style="edgeStyle=none;rounded=1;sketch=0;html=1;exitX=0;exitY=0.72;exitDx=0;exitDy=0;exitPerimeter=0;shadow=0;strokeColor=#E6E6E6;fontFamily=Helvetica;fontSize=13;endArrow=none;endFill=0;" parent="1" source="62" edge="1">

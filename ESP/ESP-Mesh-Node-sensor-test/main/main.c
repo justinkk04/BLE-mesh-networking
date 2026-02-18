@@ -65,7 +65,7 @@ static uint8_t dev_uuid[16] = {0xdd, 0xdd};
 #define INA260_CONFIG 0x6727 // 1024-sample averaging
 
 // ============== PWM Configuration ==============
-#define PWM_GPIO GPIO_NUM_5              // Wire to 2N2222 base / MOSFET gate
+#define PWM_GPIO GPIO_NUM_5              // Wire to 4.7k then 2N2222 base / MOSFET gate
 #define PWM_FREQ_HZ 1000                 // 1kHz (same as Pico code)
 #define PWM_RESOLUTION LEDC_TIMER_13_BIT // 8192 steps
 #define PWM_MAX_DUTY 8191                // (2^13 - 1)

@@ -4,21 +4,21 @@
     "type": "split",
     "children": [
       {
-        "id": "6f4a326ae138c9f1",
+        "id": "7b8ddae09ba03e97",
         "type": "tabs",
         "children": [
           {
-            "id": "cc6a736001679814",
+            "id": "571cacaae1611156",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Concepts/Self-Healing-and-Auto-Rejoin.md",
+                "file": "Components/ESP-Sensing-Node-Map.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Self-Healing-and-Auto-Rejoin"
+              "title": "ESP-Sensing-Node-Map"
             }
           }
         ]
@@ -94,7 +94,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Concepts/Self-Healing-and-Auto-Rejoin.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +103,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Self-Healing-and-Auto-Rejoin"
+              "title": "Backlinks"
             }
           },
           {
@@ -113,12 +112,11 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Concepts/Self-Healing-and-Auto-Rejoin.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Self-Healing-and-Auto-Rejoin"
+              "title": "Outgoing links"
             }
           },
           {
@@ -156,13 +154,12 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Concepts/Self-Healing-and-Auto-Rejoin.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Self-Healing-and-Auto-Rejoin"
+              "title": "Outline"
             }
           }
         ]
@@ -183,29 +180,32 @@
       "bases:Create new base": false
     }
   },
-  "active": "cc6a736001679814",
+  "active": "571cacaae1611156",
   "lastOpenFiles": [
-    "How-To-Actually-Learn-This-Repo.md",
-    "00-Start-Here.md",
+    "Components/ESP-GATT-Gateway-Map.md",
+    "Flows/End-to-End-READ-Flow.md",
+    "Flows/RAMP-One-vs-ALL-Flow.md",
+    "Flows/Power-Loss-Auto-Rejoin-Flow.md",
+    "Components/ESP-Relay-Node-Map.md",
+    "Cheat-Sheets/C-Basics-For-This-Repo.md",
+    "Cheat-Sheets/Python-Basics-For-This-Repo.md",
     "Concepts/Self-Healing-and-Auto-Rejoin.md",
+    "Concepts/Addressing-Unicast-vs-Group.md",
+    "Beginner-Track.md",
+    "01-Learning-Path.md",
+    "00-Start-Here.md",
+    "How-To-Actually-Learn-This-Repo.md",
     "Drawio/10-Power-Loss-Auto-Rejoin.drawio",
     "Drawio/09-RAMP-One-vs-ALL.drawio",
     "Drawio/08-Relay-Out-of-Range.drawio",
     "Drawio/07-Provisioning-Lifecycle.drawio",
     "Drawio/01-System-Architecture.drawio",
-    "Flows/Power-Loss-Auto-Rejoin-Flow.md",
-    "Flows/RAMP-One-vs-ALL-Flow.md",
     "Flows/Relay-Out-of-Range-Flow.md",
-    "Components/ESP-GATT-Gateway-Map.md",
     "Flows/Provisioning-Lifecycle-Flow.md",
     "Concepts/Relay-Behavior-and-When-It-Activates.md",
     "Concepts/WireGuard-Concepts.md",
     "ESP-IDF/ESP-GATT-Gateway.md",
-    "Beginner-Track.md",
-    "01-Learning-Path.md",
     "Labs/Hands-On-Lab-1-Trace-READ.md",
-    "Flows/End-to-End-READ-Flow.md",
-    "Cheat-Sheets/C-Basics-For-This-Repo.md",
     "Welcome.md",
     "Concepts/Roles-Server-Client-Gateway-Explained.md",
     "Debugging/Debugging-Index.md",
@@ -216,8 +216,6 @@
     "Architecture/Remote-Access-WireGuard-and-SSH.md",
     "Python-Gateway/Command-Feature-Reference.md",
     "Flows/Target-Node-and-ALL-Flow.md",
-    "Flows/Scan-and-Connect-By-Address-Flow.md",
-    "Concepts/Provisioning-Explained.md",
     "Drawio/03-Threshold-PowerManager.drawio",
     "Drawio/02-READ-Sequence.drawio"
   ]
