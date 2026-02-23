@@ -83,6 +83,34 @@ const METRIC_LABELS = {
 
 
 // =====================================================================
+//  Animated Value Helper
+// =====================================================================
+
+// Smoothly interpolates numeric display values using requestAnimationFrame
+function animateValue(element, newValue, decimals, suffix) {
+    if (decimals === undefined) decimals = 0;
+    if (suffix === undefined) suffix = '';
+    const current = parseFloat(element.textContent) || 0;
+    if (Math.abs(current - newValue) < 0.01) return; // No meaningful change
+
+    const duration = 400;
+    const start = performance.now();
+
+    function tick(now) {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        const val = current + (newValue - current) * eased;
+        element.textContent = val.toFixed(decimals) + suffix;
+        if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+    element.classList.add('value-updated');
+    setTimeout(() => element.classList.remove('value-updated'), 600);
+}
+
+
+// =====================================================================
 //  Tab Switching
 // =====================================================================
 
@@ -146,16 +174,66 @@ setInterval(() => {
     if (activeTab === 'nodes' && nodesSelectedId) fetchNodeChart(nodesSelectedId);
 }, 5000);
 
+// Live ticker — updates timestamps every second between polls
+setInterval(() => {
+    if (!currentState) return;
+    const age = (Date.now() - new Date(currentState.timestamp).getTime()) / 1000;
+    const updateEl = document.getElementById('last-update');
+    if (updateEl) {
+        updateEl.textContent = currentState.timestamp + ' (' + age.toFixed(0) + 's ago)';
+    }
+    updateHeader(currentState);
+}, 1000);
+
 
 // =====================================================================
 //  Master Update
 // =====================================================================
+
+let lastLogObj = null;
 
 function updateDashboard(state) {
     currentState = state;
     updateHeader(state);
     updateStatusBar(state);
     updateNodeFilterDropdown(state);
+
+    // Stream live logs to console
+    if (state.logs && state.logs.length > 0) {
+        let newLogs = [];
+        if (!lastLogObj) {
+            newLogs = state.logs;
+        } else {
+            const lastStr = JSON.stringify(lastLogObj);
+            const idx = state.logs.findIndex(l => JSON.stringify(l) === lastStr);
+            if (idx === -1) {
+                newLogs = state.logs; // wrapped completely
+            } else {
+                newLogs = state.logs.slice(idx + 1);
+            }
+        }
+
+        if (newLogs.length > 0) {
+            newLogs.forEach(l => {
+                let type = 'info';
+                if (l.text.includes('ERROR:') || l.text.includes('Failed') || (l.style && l.style.includes('red'))) {
+                    type = 'error';
+                } else if (l.text.includes('>>') || l.text.includes('OK:')) {
+                    type = 'resp';
+                } else if (l.text.includes('Sent:') || l.text.includes('Target node:')) {
+                    type = 'cmd';
+                }
+
+                // Avoid double timestamps if text already has it
+                let logText = l.text;
+                if (!logText.startsWith('[')) {
+                    logText = `[${l.time}] ${logText}`;
+                }
+                appendConLine(type, logText);
+                lastLogObj = l;
+            });
+        }
+    }
 
     // Only update visible tab's heavy rendering
     if (activeTab === 'topology') {
@@ -269,7 +347,7 @@ function updateGraph(state) {
     }
 
     for (let i = 0; i < state.relay_nodes; i++) {
-        nodes.push({ id: `relay-${i+1}`, label: `Relay ${i+1}`, type: 'relay' });
+        nodes.push({ id: `relay-${i + 1}`, label: `Relay ${i + 1}`, type: 'relay' });
     }
 
     const topology = state.topology || { node_roles: {} };
@@ -277,16 +355,26 @@ function updateGraph(state) {
     const relays = nodes.filter(n => n.type === 'relay');
     const sensing = nodes.filter(n => n.type === 'sensing');
 
-    relays.forEach(r => links.push({ source: 'gateway', target: r.id, linkType: 'mesh' }));
-    sensing.forEach(n => {
-        const nid = n.id.replace('node-', '');
-        const role = topology.node_roles[nid] || 'direct';
-        if (role === 'relayed' && relays.length > 0) {
-            links.push({ source: relays[0].id, target: n.id, linkType: 'mesh-relay' });
-        } else {
-            links.push({ source: 'gateway', target: n.id, linkType: 'mesh' });
+    if (relays.length > 0) {
+        relays.forEach(r => links.push({ source: 'gateway', target: r.id, linkType: 'mesh' }));
+        sensing.forEach(n => {
+            const nid = n.id.replace('node-', '');
+            const role = topology.node_roles[nid] || 'direct';
+            if (role === 'relayed') {
+                links.push({ source: relays[0].id, target: n.id, linkType: 'mesh-relay' });
+            } else {
+                links.push({ source: 'gateway', target: n.id, linkType: 'mesh' });
+                links.push({ source: relays[0].id, target: n.id, linkType: 'mesh-relay-weak' }); // Show mesh connections
+            }
+        });
+        if (sensing.length > 1) {
+            links.push({ source: sensing[0].id, target: sensing[1].id, linkType: 'mesh-relay-weak' });
         }
-    });
+    } else {
+        sensing.forEach(n => {
+            links.push({ source: 'gateway', target: n.id, linkType: 'mesh' });
+        });
+    }
 
     // Preserve positions
     const oldNodes = new Map(simulation.nodes().map(d => [d.id, d]));
@@ -307,10 +395,10 @@ function updateGraph(state) {
     linkSelection = linkSelection.enter().append('line').attr('class', 'link').merge(linkSelection);
 
     linkSelection
-        .attr('stroke', d => d.linkType === 'gatt' ? '#bc8cff' : d.linkType === 'mesh-relay' ? '#58a6ff' : '#30363d')
-        .attr('stroke-dasharray', d => d.linkType === 'gatt' ? '6,3' : 'none')
-        .attr('stroke-width', d => d.linkType === 'gatt' ? 2 : 1.5)
-        .attr('stroke-opacity', d => d.linkType === 'mesh-relay' ? 0.8 : 0.6);
+        .attr('stroke', d => d.linkType === 'gatt' ? '#bc8cff' : d.linkType.startsWith('mesh-relay') ? '#58a6ff' : '#30363d')
+        .attr('stroke-dasharray', d => d.linkType === 'gatt' ? '6,3' : d.linkType === 'mesh-relay-weak' ? '3,6' : 'none')
+        .attr('stroke-width', d => d.linkType === 'gatt' ? 2 : d.linkType === 'mesh-relay-weak' ? 1 : 1.5)
+        .attr('stroke-opacity', d => d.linkType === 'mesh-relay' ? 0.8 : d.linkType === 'mesh-relay-weak' ? 0.3 : 0.6);
 
     // Nodes
     const ng = svg.selectAll('.node-group').data([0]).join('g').attr('class', 'node-group');
@@ -319,7 +407,18 @@ function updateGraph(state) {
 
     const enter = nodeSelection.enter().append('g').attr('class', 'node')
         .call(d3.drag().on('start', ds).on('drag', dd).on('end', de))
-        .on('click', (e, d) => { e.stopPropagation(); topoSelectedId = d.id; updateTopoNodeDetails(d); });
+        .on('click', (e, d) => {
+            e.stopPropagation();
+            topoSelectedId = d.id;
+            updateTopoNodeDetails(d);
+            // Apply visual selection instantly (prevents chopping/lag waiting for next poll)
+            svg.selectAll('.node').attr('class', n => {
+                let c = 'node';
+                if (n.type === 'sensing' && n.status === 'offline') c += ' offline';
+                if (topoSelectedId && n.id === topoSelectedId) c += ' selected';
+                return c;
+            });
+        });
     enter.append('circle').attr('r', 15);
     enter.append('text').attr('dy', 25).attr('text-anchor', 'middle').text(d => d.label);
 
@@ -358,7 +457,11 @@ function updateGraph(state) {
         nodeSelection.attr('transform', d => `translate(${d.x},${d.y})`);
     });
     simulation.force('link').links(links);
-    simulation.alpha(changed ? 1 : 0.3).restart();
+    // Only restart simulation when topology changes (node added/removed)
+    // Data-only updates should NOT jitter the graph
+    if (changed) {
+        simulation.alpha(0.3).restart();
+    }
 }
 
 function ds(e, d) { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; }
@@ -404,8 +507,10 @@ function updateTopoSidebar(state) {
             const nid = topoSelectedId.replace('node-', '');
             if (state.nodes[nid]) {
                 const age = (Date.now() / 1000) - state.nodes[nid].last_seen;
-                nd = { id: topoSelectedId, label: nodeLabel(nid), type: 'sensing',
-                    status: age > 20 ? 'offline' : age > 12 ? 'stale' : 'online', ...state.nodes[nid] };
+                nd = {
+                    id: topoSelectedId, label: nodeLabel(nid), type: 'sensing',
+                    status: age > 20 ? 'offline' : age > 12 ? 'stale' : 'online', ...state.nodes[nid]
+                };
             }
         } else if (topoSelectedId.startsWith('relay-')) {
             nd = { id: topoSelectedId, label: topoSelectedId.replace('relay-', 'Relay '), type: 'relay' };
@@ -443,58 +548,93 @@ function updateNodeCards(state) {
 
     document.getElementById('nodes-count').textContent = `${nodeIds.length} node${nodeIds.length !== 1 ? 's' : ''}`;
 
-    // Build cards
-    let html = '';
-    for (const nid of nodeIds) {
-        const d = state.nodes[nid];
-        const age = now - d.last_seen;
-        let st = 'ok', stLabel = 'OK';
-        if (age > 20) { st = 'offline'; stLabel = 'OFFLINE'; }
-        else if (age > 12) { st = 'stale'; stLabel = 'STALE'; }
+    // Check if we can do in-place update (same node set)
+    const existingCards = container.querySelectorAll('.node-card[data-nid]');
+    const existingIds = new Set([...existingCards].map(c => c.dataset.nid));
+    const newIds = new Set(nodeIds);
+    const needsRebuild = existingIds.size !== newIds.size ||
+        [...newIds].some(id => !existingIds.has(id));
 
-        const isActive = nodesSelectedId === nid;
+    if (!needsRebuild && existingCards.length > 0) {
+        // In-place update — animate values instead of rebuilding DOM
+        for (const nid of nodeIds) {
+            const card = container.querySelector(`.node-card[data-nid="${nid}"]`);
+            if (!card) continue;
+            const d = state.nodes[nid];
+            const age = now - d.last_seen;
+            let st = 'ok', stLabel = 'OK';
+            if (age > 20) { st = 'offline'; stLabel = 'OFFLINE'; }
+            else if (age > 12) { st = 'stale'; stLabel = 'STALE'; }
 
-        html += `
-        <div class="node-card ${isActive ? 'active' : ''}" data-nid="${nid}">
-            <div class="node-card-header">
-                <span class="node-name">${nodeLabel(nid)}</span>
-                <span class="node-status ${st}">${stLabel}</span>
-            </div>
-            <div class="node-card-metrics">
-                <div><span class="metric-label">Duty</span><br><span class="metric-value">${d.duty}%</span></div>
-                <div><span class="metric-label">Voltage</span><br><span class="metric-value">${d.voltage.toFixed(2)}V</span></div>
-                <div><span class="metric-label">Current</span><br><span class="metric-value">${d.current.toFixed(1)}mA</span></div>
-                <div><span class="metric-label">Power</span><br><span class="metric-value">${d.power.toFixed(0)}mW</span></div>
-            </div>
-        </div>`;
-    }
+            // Update status badge
+            const statusEl = card.querySelector('.node-status');
+            if (statusEl) {
+                statusEl.className = `node-status ${st}`;
+                statusEl.textContent = stLabel;
+            }
 
-    // Also show relay nodes
-    for (let i = 0; i < (state.relay_nodes || 0); i++) {
-        html += `
-        <div class="node-card" style="opacity:0.6">
-            <div class="node-card-header">
-                <span class="node-name">Relay ${i + 1}</span>
-                <span class="node-status ok" style="background:rgba(88,166,255,0.15);color:var(--accent-blue)">RELAY</span>
-            </div>
-            <div style="font-size:0.75rem;color:var(--text-secondary);padding-top:0.25rem">Packet forwarder — no sensor data</div>
-        </div>`;
-    }
+            // Animate metric values in-place
+            const values = card.querySelectorAll('.metric-value');
+            if (values[0]) animateValue(values[0], d.duty, 0, '%');
+            if (values[1]) animateValue(values[1], d.voltage, 2, 'V');
+            if (values[2]) animateValue(values[2], d.current, 1, 'mA');
+            if (values[3]) animateValue(values[3], d.power, 0, 'mW');
+        }
+    } else {
+        // Full rebuild — node set changed
+        let html = '';
+        for (const nid of nodeIds) {
+            const d = state.nodes[nid];
+            const age = now - d.last_seen;
+            let st = 'ok', stLabel = 'OK';
+            if (age > 20) { st = 'offline'; stLabel = 'OFFLINE'; }
+            else if (age > 12) { st = 'stale'; stLabel = 'STALE'; }
 
-    container.innerHTML = html;
+            const isActive = nodesSelectedId === nid;
 
-    // Bind click handlers
-    container.querySelectorAll('.node-card[data-nid]').forEach(card => {
-        card.addEventListener('click', () => {
-            const nid = card.dataset.nid;
-            nodesSelectedId = nid;
-            // Update active state visually
-            container.querySelectorAll('.node-card').forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-            showNodeDetail(nid, state);
-            fetchNodeChart(nid);
+            html += `
+            <div class="node-card ${isActive ? 'active' : ''}" data-nid="${nid}">
+                <div class="node-card-header">
+                    <span class="node-name">${nodeLabel(nid)}</span>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span class="node-status ${st}">${stLabel}</span>
+                    </div>
+                </div>
+                <div class="node-card-metrics">
+                    <div><span class="metric-label">Duty</span><br><span class="metric-value">${d.duty}%</span></div>
+                    <div><span class="metric-label">Voltage</span><br><span class="metric-value">${d.voltage.toFixed(2)}V</span></div>
+                    <div><span class="metric-label">Current</span><br><span class="metric-value">${d.current.toFixed(1)}mA</span></div>
+                    <div><span class="metric-label">Power</span><br><span class="metric-value">${d.power.toFixed(0)}mW</span></div>
+                </div>
+            </div>`;
+        }
+
+        // Also show relay nodes
+        for (let i = 0; i < (state.relay_nodes || 0); i++) {
+            html += `
+            <div class="node-card" style="opacity:0.6">
+                <div class="node-card-header">
+                    <span class="node-name">Relay ${i + 1}</span>
+                    <span class="node-status ok" style="background:rgba(88,166,255,0.15);color:var(--accent-blue)">RELAY</span>
+                </div>
+                <div style="font-size:0.75rem;color:var(--text-secondary);padding-top:0.25rem">Packet forwarder — no sensor data</div>
+            </div>`;
+        }
+
+        container.innerHTML = html;
+
+        // Bind click handlers
+        container.querySelectorAll('.node-card[data-nid]').forEach(card => {
+            card.addEventListener('click', () => {
+                const nid = card.dataset.nid;
+                nodesSelectedId = nid;
+                container.querySelectorAll('.node-card').forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                showNodeDetail(nid, state);
+                fetchNodeChart(nid);
+            });
         });
-    });
+    }
 
     // Update detail panel if a node is already selected
     if (nodesSelectedId && state.nodes[nodesSelectedId]) {
@@ -766,16 +906,14 @@ conInput.addEventListener('keydown', async (e) => {
         consoleHistory.push(cmd);
         consoleHistIdx = consoleHistory.length;
 
-        appendConLine('cmd', cmd);
-
         // Local-only commands
         if (cmd.toLowerCase() === 'clear') {
             conOutput.innerHTML = '';
-            appendConLine('system', 'Console cleared');
+            // Do not reset lastLogObj so we don't re-dump history
             return;
         }
 
-        // Send to API
+        // Send to API silently — response will arrive via state.logs stream
         try {
             const resp = await fetch('/api/command', {
                 method: 'POST',
@@ -785,8 +923,6 @@ conInput.addEventListener('keydown', async (e) => {
             const data = await resp.json();
             if (data.error) {
                 appendConLine('error', data.error);
-            } else if (data.response) {
-                appendConLine('resp', data.response);
             }
         } catch (err) {
             appendConLine('error', `Network error: ${err.message}`);
@@ -1031,7 +1167,7 @@ async function removeNode(nid) {
 }
 
 // --- Clear all history ---
-document.getElementById('btn-clear-all-history').addEventListener('click', function() {
+document.getElementById('btn-clear-all-history').addEventListener('click', function () {
     const btn = this;
     const orig = btn.textContent;
 
@@ -1081,3 +1217,4 @@ document.getElementById('btn-clear-all-history').addEventListener('click', funct
         }
     }, 4000);
 });
+

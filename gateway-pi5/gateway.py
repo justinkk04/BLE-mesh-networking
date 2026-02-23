@@ -708,6 +708,9 @@ class DCMonitorGateway:
         self._dashboard_polling = False
         self._dashboard_poll_active = False  # True only during the actual send/wait cycle
         self._dashboard_poll_interval = 6.0  # seconds between ALL:READ for dashboard
+        self._show_bg_polls = False  # If True, background polls are printed to TUI
+        self._manual_cmd_time = 0.0  # Timestamp of last manual command
+        self.recent_logs: list[dict] = []  # Ring buffer of recent log lines for dashboard
 
     def _export_mesh_state(self):
         """Write current mesh state to JSON file for dashboard consumption."""
@@ -725,6 +728,7 @@ class DCMonitorGateway:
             "nodes": {},
             "relay_nodes": 0,
             "sensing_node_count": self.sensing_node_count,
+            "logs": list(self.recent_logs)
         }
 
         # Export PowerManager state if active
@@ -806,6 +810,13 @@ class DCMonitorGateway:
                     return
             else:
                 return  # CLI: suppress debug logs
+
+        # Buffer log for dashboard consumption
+        ts = datetime.now().strftime("%H:%M:%S")
+        self.recent_logs.append({"time": ts, "text": text, "style": style})
+        if len(self.recent_logs) > 50:
+            self.recent_logs.pop(0)
+
         if self.app and _HAS_TEXTUAL:
             try:
                 msg = self.app.LogMsg(text, style)
@@ -918,9 +929,12 @@ class DCMonitorGateway:
                 if evt:
                     evt.set()
 
-                # Post to TUI for UI update — suppress during background dashboard poll
-                _bg_poll = self._dashboard_poll_active
-                if not _bg_poll:
+                # Determine if we should suppress this log
+                recently_manual = (time.monotonic() - self._manual_cmd_time) < 5.0
+                is_silent_bg_poll = self._dashboard_poll_active or (self._power_manager and self._power_manager._polling)
+                
+                # We log if it's NOT a silent background poll, OR if the user just sent a manual command, OR if they asked to show polls
+                if not is_silent_bg_poll or recently_manual or self._show_bg_polls:
                     if self.app and _HAS_TEXTUAL:
                         try:
                             msg = self.app.SensorDataMsg(
@@ -932,32 +946,50 @@ class DCMonitorGateway:
                             print(f"  [{timestamp}] {node_tag} >> {payload}  [post error: {e}]")
                     else:
                         print(f"[{timestamp}] {node_tag} >> {payload}")
+                        
+                # Ensure it always goes to the recent logs buffer for the dashboard
+                if self.app and (not is_silent_bg_poll or self._show_bg_polls):
+                    pass # Handled by the TUI's SensorDataMsg (which appends to recent_logs internally via self.log)
+                else:
+                    # Append strictly to buffer without printing to the TUI screen
+                    self.recent_logs.append({
+                        "time": timestamp,
+                        "text": f"[{timestamp}] {node_tag} >> {payload}",
+                        "style": "bold green"
+                    })
+                    while len(self.recent_logs) > 50:
+                        self.recent_logs.pop(0)
+
             else:
                 self.log(f"[{timestamp}] {node_tag} >> {payload}", _from_thread=True)
 
         elif decoded.startswith("ERROR:"):
-            # Suppress during PM polling or dashboard background poll
-            pm = self._power_manager
-            if (pm and pm._polling) or self._dashboard_poll_active:
-                pass  # Swallow errors during background polling (reduces TUI noise)
-            else:
+            recently_manual = (time.monotonic() - self._manual_cmd_time) < 5.0
+            is_silent_bg_poll = self._dashboard_poll_active or (self._power_manager and self._power_manager._polling)
+            
+            if not is_silent_bg_poll or recently_manual:
                 self.log(f"[{timestamp}] !! {decoded}", style="bold red", _from_thread=True)
+                
         elif decoded.startswith("SENT:"):
-            # Only show in debug mode, suppress during dashboard poll
-            if not self._dashboard_poll_active:
+            # Only show in debug mode, suppress during dashboard poll unless manual
+            recently_manual = (time.monotonic() - self._manual_cmd_time) < 5.0
+            if recently_manual or not self._dashboard_poll_active:
                 if self.app and _HAS_TEXTUAL:
                     if self.app.debug_mode:
                         self.log(f"[{timestamp}] -> {decoded}", style="dim", _from_thread=True)
                 else:
                     print(f"[{timestamp}] -> {decoded}")
+                    
         elif decoded.startswith("MESH_READY"):
             self.log(f"[{timestamp}] {decoded}", _from_thread=True)
+            
         elif decoded.startswith("TIMEOUT:"):
-            pm = self._power_manager
-            if (pm and pm._polling) or self._dashboard_poll_active:
-                pass  # Swallow timeouts during background polling
-            else:
+            recently_manual = (time.monotonic() - self._manual_cmd_time) < 5.0
+            is_silent_bg_poll = self._dashboard_poll_active or (self._power_manager and self._power_manager._polling)
+            
+            if not is_silent_bg_poll or recently_manual:
                 self.log(f"[{timestamp}] !! {decoded}", style="yellow", _from_thread=True)
+                
         else:
             self.log(f"[{timestamp}] {decoded}", _from_thread=True)
 
@@ -1010,6 +1042,9 @@ class DCMonitorGateway:
         if not self.client or not self.client.is_connected:
             self.log("Not connected")
             return False
+
+        if not _silent:
+            self._manual_cmd_time = time.monotonic()
 
         try:
             await self.client.write_gatt_char(COMMAND_CHAR_UUID, cmd.encode('utf-8'))
@@ -1099,16 +1134,115 @@ class DCMonitorGateway:
         """Request single sensor reading from a mesh node"""
         return await self.send_to_node(node, "READ")
 
+    async def _check_dashboard_commands(self) -> bool:
+        """Poll for commands from the web dashboard via mesh_commands.json.
+
+        Parses commands directly to await BLE responses before writing
+        the outcome to mesh_response.json so the dashboard accurately
+        knows if a command succeeded or timed out.
+        """
+        cmd_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mesh_commands.json")
+        resp_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mesh_response.json")
+
+        if not os.path.exists(cmd_file):
+            return False
+
+        try:
+            with open(cmd_file, 'r') as f:
+                cmd_data = json.load(f)
+            os.remove(cmd_file)  # Consume immediately
+
+            cmd_text = cmd_data.get("command", "").strip()
+            if not cmd_text:
+                return False
+
+            self.log(f"[DASHBOARD] >> {cmd_text}", style="bold cyan", _from_thread=True)
+
+            cmd_lower = cmd_text.lower()
+            response = "Executed"
+            
+            # Simple manual parser to await mesh responses
+            parts = cmd_lower.split()
+            if parts and parts[0] == "node" and len(parts) >= 3:
+                node_id = parts[1].upper()
+                action = parts[2]
+                val = parts[3] if len(parts) >= 4 else None
+                
+                success = False
+                if action in ['s', 'stop']:
+                    success = await self.stop_node(node_id)
+                elif action in ['r', 'ramp']:
+                    success = await self.start_ramp(node_id)
+                elif action == 'read':
+                    success = await self.read_sensor(node_id)
+                elif action == 'duty' and val is not None and val.isdigit():
+                    success = await self.set_duty(node_id, int(val))
+                elif action in ['m', 'monitor']:
+                    success = await self.start_monitor(node_id)
+                elif action == 'status':
+                    success = await self.read_status(node_id)
+                else:
+                    success = False
+                    response = "Invalid node action"
+
+                if success and node_id != "ALL":
+                    # Wait for actual mesh confirm
+                    await self._wait_node_response(node_id, timeout=4.0)
+                elif success and node_id == "ALL":
+                    # Cannot map "ALL" to a specific event
+                    await asyncio.sleep(2.0)
+
+                response = "Executed"
+
+            elif cmd_lower.startswith("raw ") and len(parts) >= 2:
+                raw_cmd = cmd_text.split(None, 1)[1].upper()
+                await self.send_command(raw_cmd)
+                response = "Raw command sent without waiting"
+                
+            else:
+                # Fallback to TUI dispatcher for priority/threshold/clear/etc
+                if self.app:
+                    self.app.call_from_thread(self.app.dispatch_command, cmd_lower)
+                    response = f"Forwarded to TUI: {cmd_text}"
+                else:
+                    response = "ERROR: TUI not available"
+
+            # Write response for dashboard
+            tmp = resp_file + ".tmp"
+            with open(tmp, 'w') as f:
+                json.dump({
+                    "command": cmd_text,
+                    "response": response,
+                    "status": "executed",
+                    "timestamp": datetime.now().isoformat()
+                }, f)
+            os.replace(tmp, resp_file)
+            return True
+
+        except Exception as e:
+            self.log(f"[DASHBOARD] Command error: {e}", style="bold red", _from_thread=True)
+            return False
+
     async def _dashboard_poll_loop(self):
         """Background poll loop — sends ALL:READ periodically for the dashboard.
 
         Only runs when PM is NOT active (PM has its own poll loop).
         Keeps _node_cache fresh so the web dashboard has live data.
+        Also checks for dashboard commands on every cycle.
         """
         self._dashboard_polling = True
         try:
             while self._dashboard_polling:
-                # Skip if PM is running its own poll
+                # Always check for dashboard commands, even when PM is active
+                cmd_handled = await self._check_dashboard_commands()
+                
+                if cmd_handled:
+                    # Skip the silent background poll this cycle so the 
+                    # user can see the responses to their manual commands.
+                    await asyncio.sleep(2.0)
+                    continue
+
+                # Skip sensor polling if PM is running its own poll
                 if self._power_manager and self._power_manager.threshold_mw is not None:
                     await asyncio.sleep(self._dashboard_poll_interval)
                     continue
@@ -1120,14 +1254,25 @@ class DCMonitorGateway:
 
                 self._dashboard_poll_active = True
                 await self.send_to_node("ALL", "READ", _silent=True)
-                await asyncio.sleep(4.0)  # Wait for responses
+                
+                # If interval is less than 5s, we can't sleep for 5s here, 
+                # otherwise we could never poll faster than every 5s.
+                wait_time = min(5.0, self._dashboard_poll_interval)
+                await asyncio.sleep(wait_time)  # Wait for responses
+                
                 self._dashboard_poll_active = False
                 self._export_mesh_state()
-                await asyncio.sleep(2.0)  # Short gap before next cycle
+                
+                # Wait any remaining time left in the user's requested interval
+                if self._dashboard_poll_interval > wait_time:
+                    await asyncio.sleep(self._dashboard_poll_interval - wait_time)
+                else:
+                    await asyncio.sleep(0.1)  # Minimal gap before next cycle
         except asyncio.CancelledError:
             pass
         finally:
             self._dashboard_polling = False
+
 
     async def start_monitor(self, node: str):
         """Start continuous monitoring on a mesh node"""
@@ -1207,7 +1352,8 @@ class DCMonitorGateway:
                         print(f"  Note: duty clamped to {max(0, min(100, val))}%")
                     await self.set_duty(self.target_node, val)
                 elif cmd.isdigit():
-                    await self.set_duty(self.target_node, int(cmd))
+                    val = int(cmd)
+                    await self.set_duty(self.target_node, val)
                 elif cmd.startswith('raw'):
                     parts = cmd.split(None, 1)
                     if len(parts) < 2:
@@ -1542,6 +1688,32 @@ if _HAS_TEXTUAL:
                     else:
                         self.log_message("Power management not active. Use: threshold <mW>")
 
+                elif cmd.startswith('poll'):
+                    parts = cmd.split()
+                    if len(parts) < 2:
+                        self.log_message(f"Current poll interval: {gw._dashboard_poll_interval}s. "
+                                         f"Visibility: {'SHOW' if gw._show_bg_polls else 'HIDE'}")
+                        self.log_message("Usage: poll <seconds> OR poll show OR poll hide")
+                        return
+                    
+                    arg = parts[1].strip()
+                    if arg == 'show':
+                        gw._show_bg_polls = True
+                        self.notify("Background polls will now be shown in the console", severity="information")
+                    elif arg == 'hide':
+                        gw._show_bg_polls = False
+                        self.notify("Background polls are now hidden from the console", severity="information")
+                    else:
+                        try:
+                            new_int = float(arg)
+                            if new_int < 0.1:
+                                self.log_message("Interval must be at least 0.1s")
+                            else:
+                                gw._dashboard_poll_interval = new_int
+                                self.notify(f"Dashboard poll interval set to {new_int}s", severity="information")
+                        except ValueError:
+                            self.log_message("Invalid poll interval")
+
                 elif cmd in ['d', 'debug']:
                     self.action_toggle_debug()
 
@@ -1718,6 +1890,11 @@ if _HAS_TEXTUAL:
                 "  threshold off  Disable power management\n"
                 "  priority off   Clear priority node\n"
                 "  power          Show power manager status\n"
+                "\n"
+                "[bold]--- Dashboard Polling ---[/bold]\n"
+                "  poll <sec>     Set background poll interval (default 6.0s)\n"
+                "  poll show      Show background polls in console\n"
+                "  poll hide      Hide background polls from console\n"
                 "\n"
                 "[bold]--- Keys / Misc ---[/bold]\n"
                 "  debug / d      Toggle debug mode (or F2)\n"

@@ -35,9 +35,12 @@ STATE_FILE = Path(__file__).parent.parent / "mesh_state.json"
 DB_FILE = Path(__file__).parent / "mesh_data.db"
 COMMAND_FILE = Path(__file__).parent.parent / "mesh_commands.json"
 
-# Console log buffer (in-memory ring buffer for the UI)
+# Console log buffer (in-memory ring buffer for the old UI, keep for /api/command/log)
 _console_log = deque(maxlen=500)
 _console_lock = threading.Lock()
+
+# Mock logs buffer for the new streaming UI
+_mock_logs = []
 
 # --------------------------------------------------------------------------- #
 #  SQLite helpers
@@ -181,11 +184,15 @@ MOCK_STATE_TEMPLATE = {
             "role": "sensing", "duty": 0, "voltage": 11.735,
             "current": 502.5, "power": 5896.8, "responsive": True,
             "last_seen": 0, "commanded_duty": 0, "target_duty": 0
+        },
+        "3": {
+            "role": "relay", "responsive": True, "last_seen": 0
         }
     },
     "relay_nodes": 1,
     "sensing_node_count": 3,
-    "topology": {"node_roles": {"1": "direct", "2": "direct"}}
+    "topology": {"node_roles": {"1": "relayed", "2": "relayed", "3": "relay"}},
+    "logs": []
 }
 
 
@@ -206,6 +213,10 @@ def _build_mock_state():
         state["nodes"]["2"]["voltage"] * state["nodes"]["2"]["current"], 1)
     state["power_manager"]["total_power_mw"] = round(
         state["nodes"]["1"]["power"] + state["nodes"]["2"]["power"], 0)
+    
+    with _console_lock:
+        state["logs"] = list(_mock_logs)
+
     return state
 
 
@@ -389,12 +400,18 @@ def post_command():
         _console_log.append(log_entry)
 
     if app.config.get("MOCK_MODE"):
-        # Simulate responses
-        resp_text = _mock_command_response(cmd_text)
-        resp_entry = {"time": ts, "type": "resp", "text": resp_text}
         with _console_lock:
-            _console_log.append(resp_entry)
-        return jsonify({"status": "ok", "response": resp_text})
+            # Add exactly like gateway.py formatting
+            _mock_logs.append({"time": ts, "text": f"[DASHBOARD] >> {cmd_text}", "style": "bold cyan"})
+            _mock_logs.append({"time": ts, "text": f"Sent: ALL:{cmd_text.upper()}", "style": ""})
+            
+            # Simulate mesh callback
+            for mr in _mock_command_response(cmd_text, ts):
+                _mock_logs.append(mr)
+
+            while len(_mock_logs) > 50:
+                _mock_logs.pop(0)
+        return jsonify({"status": "ok", "response": "Executed"})
 
     # Write command to file for gateway.py to pick up
     try:
@@ -408,10 +425,28 @@ def post_command():
             json.dump(cmd_data, f)
         os.replace(tmp, str(COMMAND_FILE))
 
-        resp_entry = {"time": ts, "type": "info", "text": f"Sent: {cmd_text}"}
+        # Wait for gateway.py to process and write mesh_response.json
+        resp_file = COMMAND_FILE.parent / "mesh_response.json"
+        for _ in range(16):  # up to 8 seconds
+            time.sleep(0.5)
+            if resp_file.exists():
+                try:
+                    with open(resp_file, 'r') as f:
+                        resp = json.load(f)
+                    os.remove(str(resp_file))
+                    resp_text = resp.get("response", "Executed")
+                    resp_entry = {"time": ts, "type": "resp", "text": resp_text}
+                    with _console_lock:
+                        _console_log.append(resp_entry)
+                    return jsonify({"status": "ok", "response": resp_text})
+                except Exception:
+                    pass  # File might be partially written, try again
+
+        # Timeout — gateway didn't respond
+        resp_entry = {"time": ts, "type": "info", "text": f"Sent: {cmd_text} (no response)"}
         with _console_lock:
             _console_log.append(resp_entry)
-        return jsonify({"status": "ok", "response": f"Command queued: {cmd_text}"})
+        return jsonify({"status": "ok", "response": f"Command sent: {cmd_text} (gateway did not respond)"})
     except Exception as e:
         err_entry = {"time": ts, "type": "error", "text": str(e)}
         with _console_lock:
@@ -431,39 +466,33 @@ def get_command_log():
     return jsonify({"entries": entries, "total": len(list(_console_log))})
 
 
-def _mock_command_response(cmd: str) -> str:
-    """Generate a fake response for mock mode."""
+def _mock_command_response(cmd: str, ts: str) -> list:
+    """Generate fake log stream responses for mock mode."""
     parts = cmd.upper().split()
     if not parts:
-        return "ERROR: empty command"
+        return [{"time": ts, "text": "ERROR: empty command", "style": "bold red"}]
     c = parts[0]
+    
     if c in ('HELP', '?'):
-        return ("Commands: node <id>, duty <0-100>, ramp, stop, read, status, "
-                "monitor, threshold <mW>, priority <id>, power")
+        return [{"time": ts, "text": "Commands: node <id>, duty <0-100>, ramp, stop, read, status, monitor, threshold <mW>, priority <id>, power", "style": ""}]
     if c == 'READ':
-        return "NODE1:DATA:D:75%,V:12.30V,I:250.5mA,P:3081.2mW"
+        return [{"time": ts, "text": "NODE1 >> D:75%,V:12.301V,I:250.50mA,P:3081.2mW", "style": "green"}]
     if c == 'STATUS':
-        return "NODE1: RUNNING duty=75% | NODE2: RUNNING duty=50%"
-    if c == 'STOP':
-        return "SENT:ALL:STOP"
-    if c == 'RAMP':
-        return "SENT:0:RAMP"
+        return [{"time": ts, "text": "NODE1 >> RUNNING duty=75%", "style": "green"}]
     if c == 'POWER':
-        return ("Threshold: 5000 mW | Budget: 4500 mW | "
-                "Total: 4243 mW | Headroom: 757 mW")
-    if c.startswith('DUTY'):
-        val = parts[1] if len(parts) > 1 else '?'
-        return f"SENT:0:DUTY:{val}"
+        return [{"time": ts, "text": "Threshold: 5000 mW | Budget: 4500 mW | Total: 4243 mW | Headroom: 757 mW", "style": ""}]
     if c.startswith('NODE'):
         nid = parts[1] if len(parts) > 1 else '0'
-        return f"Target node: {nid}"
+        return [{"time": ts, "text": f"Target node: {nid}", "style": "blue"}]
     if c.startswith('THRESHOLD'):
         val = parts[1] if len(parts) > 1 else '?'
-        return f"Threshold set: {val} mW"
+        return [{"time": ts, "text": f"Threshold set: {val} mW", "style": ""}]
     if c.startswith('PRIORITY'):
         val = parts[1] if len(parts) > 1 else '?'
-        return f"Priority node: {val}"
-    return f"OK: {cmd}"
+        return [{"time": ts, "text": f"Priority node: {val}", "style": ""}]
+    
+    # RAMP, STOP, DUTY just log "Sent" and don't echo back a fake OK
+    return []
 
 
 @app.route('/static/<path:filename>')
