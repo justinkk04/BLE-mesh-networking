@@ -1,6 +1,6 @@
 # BLE Mesh DC Power Monitor
 
-**Version:** v0.6.1 (Relay Node)
+**Version:** v0.6.2 (Modular Cleanup)
 **Status:** Stable / In Development
 
 A self-healing BLE Mesh network for remote DC power monitoring and control. The system uses ESP32-C6 nodes to read INA260 sensors directly via I2C and control loads via PWM, bridged to a Raspberry Pi 5 gateway for automated power management.
@@ -36,19 +36,23 @@ INA260 sensor + Load Circuit
 
 ## Project Structure
 
-- `ESP/ESP-Provisioner/` — Auto-provisioner for all mesh nodes (UUID prefix `0xdd`).
-- `ESP/ESP_GATT_BLE_Gateway/` — Pi 5 ↔ Mesh bridge (GATT + Vendor Model).
-- `ESP/ESP-Mesh-Node-sensor-test/` — Sensing nodes (I2C INA260, PWM load control).
-- `ESP/ESP-Mesh-Relay-Node/` — Relay-only nodes (silent relay + LED heartbeat).
-- `gateway-pi5/` — Python 3 gateway script (CLI/TUI).
-- `Documentation/` — Historical docs and implementation details.
+All codebases are modular (v0.6.2) — each `main.c` is a thin orchestrator calling focused module files.
+
+- `ESP/ESP-Provisioner/` — Auto-provisioner (`main.c` + `provisioning`, `mesh_config`, `node_registry`, `composition`, `model_binding` modules).
+- `ESP/ESP_GATT_BLE_Gateway/` — Pi 5 ↔ Mesh bridge (`main.c` + `gatt_service`, `mesh_gateway`, `command_parser`, `monitor`, `node_tracker` modules).
+- `ESP/ESP-Mesh-Node-sensor-test/` — Sensing nodes (`main.c` + `sensor`, `load_control`, `command`, `mesh_node` modules).
+- `ESP/ESP-Mesh-Relay-Node/` — Relay-only nodes (`main.c` + `mesh_relay`, `led` modules).
+- `gateway-pi5/gateway-code/` — Python 3 gateway (`gateway.py` entry point + `dc_gateway`, `tui_app`, `power_manager`, `ble_thread`, `node_state`, `constants` modules).
+- `Documentation/` — Versioned docs, changelogs, and implementation guides.
 - `MESH_IMPLEMENTATION.md` — Detailed technical documentation.
 
 ## Roadmap
 
 - **v0.5.0 (Complete):** Removed Pico 2W (reduced latency 500ms→50ms, simplified architecture). PowerManager refinement, dynamic discovery.
 - **v0.6.0 (Complete):** Group addressing implemented. Poll time reduced from O(N) to O(1).
-- **v0.6.1 (Current):** Relay-only node for range extension and path redundancy.
+- **v0.6.1 (Complete):** Relay-only node for range extension and path redundancy.
+- **v0.6.01 (Complete):** Hardware failsafe mod — Q1 base pull-up moved from 3.3V to 12V (load stays OFF if ESP loses power).
+- **v0.6.2 (Current):** Modular code cleanup — split all monolithic files into single-responsibility modules (26 module files across 5 codebases, zero behavior changes).
 - **v0.7.0 (Next):** Self-healing gateway failover.
 - **v1.0.0:** Final stress testing and release.
 
