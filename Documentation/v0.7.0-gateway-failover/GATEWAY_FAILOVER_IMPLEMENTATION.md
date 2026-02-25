@@ -4,6 +4,13 @@
 **Author:** Justin Kwarteng
 **Purpose:** Feed this document to an agent to implement BLE Mesh gateway failover.
 
+> [!IMPORTANT]
+> **v0.6.2 Modular Cleanup:** All codebases were split into single-responsibility modules.
+> See `Documentation/v0.6.2-classes-cleanup/CHANGELOG.md` for full details.
+> **DO NOT add code to `main.c` files** — they are thin orchestrators.
+> **DO NOT add code to monolithic `gateway.py`** — it was split into 7 modules.
+> Add to the correct module file instead.
+
 ---
 
 ## 1. System Summary (What We Have Now — v0.6.1)
@@ -28,13 +35,13 @@ INA260 sensor + Load Circuit
 
 ### File Locations
 
-| Component | Path | Language | Lines |
-|---|---|---|---|
-| GATT Gateway | `ESP/ESP_GATT_BLE_Gateway/main/main.c` | C | ~1036 |
-| Sensor Node | `ESP/ESP-Mesh-Node-sensor-test/main/main.c` | C | ~781 |
-| Relay Node | `ESP/ESP-Mesh-Relay-Node/main/main.c` | C | ~311 |
-| Provisioner | `ESP/ESP-Provisioner/main/main.c` | C | ~868 |
-| Pi 5 Gateway | `gateway-pi5/gateway.py` | Python | ~2072 |
+| Component | Base Path | Key Modules |
+|---|---|---|
+| GATT Gateway | `ESP/ESP_GATT_BLE_Gateway/main/` | `main.c` (orchestrator), `gatt_service.c/h`, `mesh_gateway.c/h`, `command_parser.c/h`, `monitor.c/h`, `node_tracker.c/h`, `nvs_store.c/h` |
+| Sensor Node | `ESP/ESP-Mesh-Node-sensor-test/main/` | `main.c` (orchestrator), `sensor.c/h`, `load_control.c/h`, `command.c/h`, `mesh_node.c/h`, `nvs_store.c/h` |
+| Relay Node | `ESP/ESP-Mesh-Relay-Node/main/` | `main.c` (orchestrator), `mesh_relay.c/h`, `led.c/h`, `nvs_store.c/h` |
+| Provisioner | `ESP/ESP-Provisioner/main/` | `main.c` (orchestrator), `mesh_config.c/h`, `node_registry.c/h`, `composition.c/h`, `model_binding.c/h`, `provisioning.c/h` |
+| Pi 5 Gateway | `gateway-pi5/gateway-code/` | `gateway.py` (entry point), `constants.py`, `ble_thread.py`, `node_state.py`, `power_manager.py`, `dc_gateway.py`, `tui_app.py` |
 
 ### Current GATT Gateway Capabilities (what sensor nodes DON'T have)
 
@@ -56,10 +63,10 @@ INA260 sensor + Load Circuit
 
 ### Current Python `gateway.py` Disconnect Behavior
 
-- `connect_to_node()` connects to one device, subscribes to notifications
+- `connect_to_node()` in `dc_gateway.py` connects to one device, subscribes to notifications
 - **No disconnect detection** — if GATT link drops, bleak eventually throws on the next `write_gatt_char()`
 - **No auto-reconnect** — user must manually kill and restart `gateway.py`
-- `BleThread` runs a dedicated event loop but has no reconnection logic
+- `BleThread` (in `ble_thread.py`) runs a dedicated event loop but has no reconnection logic
 
 ---
 
@@ -69,9 +76,9 @@ INA260 sensor + Load Circuit
 
 The bleak library calls the notification handler callback with error information when a disconnect occurs on Linux/BlueZ. Additionally, `BleakClient.is_connected` returns `False` after disconnect.
 
-### 2.2 Add `_auto_reconnect_loop()` to `DCMonitorGateway`
+### 2.2 Add `_auto_reconnect_loop()` to `DCMonitorGateway` in `dc_gateway.py`
 
-Add this new method after `_dashboard_poll_loop()` in the `DCMonitorGateway` class:
+Add this new method to the `DCMonitorGateway` class in `gateway-pi5/gateway-code/dc_gateway.py`:
 
 ```python
 async def _auto_reconnect_loop(self):
@@ -143,9 +150,9 @@ async def _auto_reconnect_loop(self):
                          _from_thread=True)
 ```
 
-### 2.3 Add State Fields to `DCMonitorGateway.__init__()`
+### 2.3 Add State Fields to `DCMonitorGateway.__init__()` in `dc_gateway.py`
 
-In `__init__()` (around line 694-713), add:
+In `gateway-pi5/gateway-code/dc_gateway.py`, add to `__init__()`:
 
 ```python
 self._was_connected = False
@@ -153,24 +160,24 @@ self._reconnecting = False
 self._last_connected_address = None
 ```
 
-### 2.4 Set `_was_connected` on Successful Connection
+### 2.4 Set `_was_connected` on Successful Connection in `dc_gateway.py`
 
-In `connect_to_node()` (line 1026), after `return True`, add:
+In `connect_to_node()` in `gateway-pi5/gateway-code/dc_gateway.py`, before `return True`, add:
 
 ```python
 self._was_connected = True
 self._last_connected_address = device.address
 ```
 
-### 2.5 Add `_paused` Flag to `PowerManager`
+### 2.5 Add `_paused` Flag to `PowerManager` in `power_manager.py`
 
-In `PowerManager.__init__()` (around line 161-171), add:
+In `gateway-pi5/gateway-code/power_manager.py`, add to `PowerManager.__init__()`:
 
 ```python
 self._paused = False
 ```
 
-In `PowerManager.poll_loop()` (around line 391-419), add at the top of the loop body:
+In `PowerManager.poll_loop()`, add at the top of the loop body:
 
 ```python
 if self._paused:
@@ -178,26 +185,18 @@ if self._paused:
     continue
 ```
 
-### 2.6 Start the Reconnect Loop
+### 2.6 Start the Reconnect Loop from `tui_app.py`
 
-In `MeshGatewayApp.connect_ble()` (around line 1521-1565), after starting the dashboard poll, add:
+In `gateway-pi5/gateway-code/tui_app.py`, in `MeshGatewayApp.connect_ble()`, after successful connection, add:
 
 ```python
 # Start auto-reconnect monitor
-self.app.gateway._ble_thread.submit(
-    self.app.gateway._auto_reconnect_loop()
-)
+self._ble_thread.submit(self.gateway._auto_reconnect_loop())
 ```
 
-Or better, in `MeshGatewayApp.on_mount()` after `connect_ble()`:
+### 2.7 Handle `send_command()` During Reconnect in `dc_gateway.py`
 
-```python
-self.gateway._ble_thread.submit(self.gateway._auto_reconnect_loop())
-```
-
-### 2.7 Handle `send_command()` During Reconnect
-
-In `DCMonitorGateway.send_command()` (around line 1040-1057), add a guard at the top:
+In `gateway-pi5/gateway-code/dc_gateway.py`, add a guard at the top of `DCMonitorGateway.send_command()`:
 
 ```python
 if self._reconnecting:
@@ -214,26 +213,27 @@ if self.client is None or not self.client.is_connected:
 
 ### 3.1 Overview of Changes to Sensor Node
 
-The sensor node (`ESP-Mesh-Node-sensor-test/main/main.c`) needs these additions from the GATT gateway:
+The sensor node (`ESP-Mesh-Node-sensor-test/main/`) needs these additions from the GATT gateway.
+**Create new module files** — do NOT add to existing `main.c` or `mesh_node.c`:
 
-| Feature | Source in GATT Gateway | Lines to Port |
-|---------|----------------------|---------------|
-| GATT service definition | Lines 740-761 | ~22 |
-| GATT callbacks (read/write) | Lines 695-738 | ~44 |
-| GATT advertising | Lines 800-835 | ~36 |
-| GATT notify + chunking | Lines 214-283 | ~70 |
-| Vendor CLIENT model | Lines 144-162 | ~18 |
-| `send_vendor_command()` | Lines 352-400 | ~49 |
-| `process_gatt_command()` | Lines 560-693 | ~134 |
-| Known node tracking | Lines 198-212 | ~15 |
-| Monitor mode | Lines 529-558 | ~30 |
-| Send serialization vars | Lines 100-104 | ~5 |
+| Feature | Source in GATT Gateway | Target New Module |
+|---------|----------------------|-------------------|
+| GATT service definition | `gatt_service.c` lines ~1-22 | `gatt_service.c/h` (new) |
+| GATT callbacks (read/write) | `gatt_service.c` lines ~23-66 | `gatt_service.c/h` (new) |
+| GATT advertising | `gatt_service.c` lines ~67-103 | `gatt_service.c/h` (new) |
+| GATT notify + chunking | `gatt_service.c` lines ~104-174 | `gatt_service.c/h` (new) |
+| Vendor CLIENT model | `mesh_gateway.c` lines ~1-47 | Add to `mesh_node.c/h` |
+| `send_vendor_command()` | `mesh_gateway.c` lines ~48-96 | Add to `mesh_node.c/h` |
+| `process_gatt_command()` | `command_parser.c` | `command_parser.c/h` (new) |
+| Known node tracking | `node_tracker.c` | `node_tracker.c/h` (new) |
+| Monitor mode | `monitor.c` | `monitor.c/h` (new) |
+| Send serialization vars | `mesh_gateway.c` | Add to `mesh_node.c/h` |
 
-**Total: ~423 lines to port from GATT gateway into sensor node**
+**Update `CMakeLists.txt`** to include all new source files.
 
-### 3.2 New Mesh Composition (Both Models)
+### 3.2 New Mesh Composition in `mesh_node.c` (Both Models)
 
-The current sensor node has:
+The current sensor node's `mesh_node.c` has:
 
 ```c
 static esp_ble_mesh_model_t root_models[] = {
@@ -274,32 +274,21 @@ static esp_ble_mesh_model_t vnd_models[] = {
 
 ### 3.3 GATT Service Registration (Init Order)
 
-The sensor node's `app_main()` currently:
+The sensor node's `main.c` currently calls init functions in order.
+Add GATT init calls while keeping `main.c` as a thin orchestrator:
 
-```
-1. nvs_flash_init()
-2. ble_mesh_nvs_open()
-3. bluetooth_init()
-4. ble_mesh_get_dev_uuid()
-5. sensor_init()
-6. pwm_init()
-7. ble_mesh_init()
-8. xTaskCreate(console_task)
-```
+```c
+// In main.c app_main(), add these calls:
+#include "gatt_service.h"  // NEW include
 
-Must become:
-
-```
-1. nvs_flash_init()
-2. ble_mesh_nvs_open()
-3. bluetooth_init()
-4. ble_mesh_get_dev_uuid()
-5. sensor_init()
-6. pwm_init()
-7. gatt_register_services()    ← NEW (before mesh init!)
-8. ble_mesh_init()             ← (also init vendor client model)
-9. gatt_start_advertising()    ← NEW (after mesh init)
-10. xTaskCreate(console_task)
+void app_main(void) {
+    // ... existing init calls ...
+    pwm_init();
+    gatt_register_services();     // NEW (before mesh init!)
+    ble_mesh_init();              // existing (also init vendor client model)
+    gatt_start_advertising();     // NEW (after mesh init)
+    xTaskCreate(console_task, ...); // existing
+}
 ```
 
 ### 3.4 Self-Addressing for Local Commands
@@ -335,15 +324,15 @@ Update in `gatt_advertise()`:
 const char *name = "DC-Monitor";
 ```
 
-And ensure `gateway.py`'s `DEVICE_NAME_PREFIXES` includes `"DC-Monitor"`:
+And ensure `gateway-pi5/gateway-code/constants.py` has `"DC-Monitor"` in `DEVICE_NAME_PREFIXES`:
 
 ```python
-DEVICE_NAME_PREFIXES = ["Mesh-Gateway", "DC-Monitor", "ESP_BLE_MESH"]
+DEVICE_NAME_PREFIXES = ["Mesh-Gateway", "DC-Monitor", "ESP-BLE-MESH"]
 ```
 
-### 3.6 `custom_model_cb()` Now Handles Both Roles
+### 3.6 `custom_model_cb()` in `mesh_node.c` Now Handles Both Roles
 
-The current sensor node's `custom_model_cb()` only handles `VND_OP_SEND` (server role). The GATT gateway's handles `VND_OP_STATUS` (client role, forwarding to Pi 5).
+The current sensor node's `mesh_node.c` `custom_model_cb()` only handles `VND_OP_SEND` (server role). The GATT gateway's `mesh_gateway.c` handles `VND_OP_STATUS` (client role, forwarding to Pi 5).
 
 The consolidated node needs BOTH:
 
@@ -377,9 +366,9 @@ static void custom_model_cb(esp_ble_mesh_model_cb_event_t event,
 
 ### 4.1 Handle Dual Vendor Models
 
-The provisioner's `parse_composition_data()` already detects both `VND_MODEL_ID_SERVER` and `VND_MODEL_ID_CLIENT` by scanning vendor model IDs. A consolidated node will report both, so `has_vnd_srv` AND `has_vnd_cli` will both be true.
+The provisioner's `composition.c` / `parse_composition_data()` already detects both `VND_MODEL_ID_SERVER` and `VND_MODEL_ID_CLIENT` by scanning vendor model IDs. A consolidated node will report both, so `has_vnd_srv` AND `has_vnd_cli` will both be true.
 
-`bind_next_model()` already handles this — it binds server first, then client. The group subscription step (v0.6.0) also works, since it only applies to `has_vnd_srv`.
+`model_binding.c` / `bind_next_model()` already handles this — it binds server first, then client. The group subscription step (v0.6.0) also works, since it only applies to `has_vnd_srv`.
 
 ### 4.2 No Provisioner Code Changes Expected
 
@@ -398,9 +387,9 @@ Just verify via serial monitor that all 6 steps complete.
 
 ## 5. Pi 5 `gateway.py` Changes (Phase 2)
 
-### 5.1 Failover Logic in `_auto_reconnect_loop()`
+### 5.1 Failover Logic in `_auto_reconnect_loop()` in `dc_gateway.py`
 
-Extend the Phase 1 reconnect loop to try ALL available nodes, not just the previously connected one:
+Extend the Phase 1 reconnect loop in `gateway-pi5/gateway-code/dc_gateway.py` to try ALL available nodes, not just the previously connected one:
 
 ```python
 # In _auto_reconnect_loop(), on disconnect:
@@ -414,9 +403,9 @@ if devices:
             break
 ```
 
-### 5.2 Update Scan Matching
+### 5.2 Update Scan Matching in `constants.py`
 
-Ensure `DEVICE_NAME_PREFIXES` and service UUID matching work for universal nodes.
+Ensure `gateway-pi5/gateway-code/constants.py` `DEVICE_NAME_PREFIXES` and service UUID matching work for universal nodes.
 
 ### 5.3 Sensing Node Count Adjustment
 
@@ -475,14 +464,31 @@ When the connected node is itself a sensor (universal node), the mesh scan will 
 
 ## 7. File Structure After v0.7.0
 
-```
+```text
 ESP/
   ESP-Mesh-Node-sensor-test/   ← Becomes "Universal Node"
     main/
-      main.c                    ← +423 lines (GATT + vendor client)
+      main.c                    ← Thin orchestrator (add 2 new init calls)
+      mesh_node.c/h             ← Add vendor CLIENT model
+      gatt_service.c/h          ← NEW (ported from GATT gateway)
+      command_parser.c/h        ← NEW (ported from GATT gateway)
+      node_tracker.c/h          ← NEW (ported from GATT gateway)
+      monitor.c/h               ← NEW (ported from GATT gateway)
+      sensor.c/h                ← Unchanged
+      load_control.c/h          ← Unchanged
+      command.c/h               ← Unchanged
+      nvs_store.c/h             ← Unchanged
+      CMakeLists.txt            ← Updated with new source files
   ESP-Mesh-Relay-Node/          ← Unchanged
   ESP-Provisioner/              ← Unchanged (or minimal)
   ESP_GATT_BLE_Gateway/         ← DEPRECATED (kept for rollback)
 gateway-pi5/
-  gateway.py                    ← +150 lines (reconnect + failover)
+  gateway-code/
+    gateway.py                  ← Entry point (unchanged)
+    constants.py                ← Add "DC-Monitor" prefix
+    ble_thread.py               ← Unchanged
+    node_state.py               ← Unchanged
+    power_manager.py            ← Add _paused flag (~5 lines)
+    dc_gateway.py               ← Add reconnect + failover (~100 lines)
+    tui_app.py                  ← Start reconnect loop (~3 lines)
 ```

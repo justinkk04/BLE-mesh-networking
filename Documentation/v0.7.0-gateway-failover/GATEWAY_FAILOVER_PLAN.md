@@ -45,13 +45,17 @@ Pi 5 ──GATT──> Any Universal Node ──Mesh──> Other Universal Node
 
 **What changes:**
 
-- Add a `_reconnect_loop()` background task that watches connection health
+- Add `_reconnect_loop()` to `dc_gateway.py` (`DCMonitorGateway` class)
+- Add reconnect state fields to `DCMonitorGateway.__init__()`
+- Add `_paused` flag to `power_manager.py` (`PowerManager` class)
+- Guard `send_command()` in `dc_gateway.py` during reconnection
+- Start reconnect loop from `tui_app.py` (`MeshGatewayApp.connect_ble()`)
 - On disconnect: rescan, reconnect, resubscribe to notifications
 - PM and dashboard poll loops pause during reconnection, resume after
 - TUI shows reconnection status
 
 **Risk:** 🟢 Low — Python-only, no firmware changes, no reprovisioning
-**Effort:** ~100 lines of Python
+**Effort:** ~100 lines of Python across 3 modules
 
 ### Phase 2: Consolidated Universal Node Firmware (ESP firmware changes)
 
@@ -63,14 +67,17 @@ Pi 5 ──GATT──> Any Universal Node ──Mesh──> Other Universal Node
 - Sensor node keeps: I2C sensor, PWM control, vendor SERVER model, relay
 - When Pi 5 connects via GATT, node enables gateway mode (forwards commands to mesh)
 - When no GATT connection, node operates as a normal sensor/relay
+- **New modules** should be created (e.g. `gatt_service.c`/`.h`, `command_parser.c`/`.h`) — do NOT dump code into `main.c`
+- Update `CMakeLists.txt` SRCS list for any new files
 
 **What changes on the Pi 5 side:**
 
-- `gateway.py` connects to any "Universal Node" instead of specifically "Mesh-Gateway"
-- On failover, it connects to a different universal node seamlessly
+- `constants.py` — update `DEVICE_NAME_PREFIXES` to include `"DC-Monitor"`
+- `dc_gateway.py` — add failover logic to `_auto_reconnect_loop()`
+- `dc_gateway.py` — adjust `sensing_node_count` when connected node is also a sensor
 
 **Risk:** 🟡 Medium — Significant firmware changes, requires reprovisioning, potential memory/BLE stack conflicts
-**Effort:** ~400 lines of C changes, ~50 lines of Python changes
+**Effort:** ~400 lines of C across new modules, ~50 lines of Python across 2 modules
 
 > [!IMPORTANT]
 > Phase 1 should be completed and verified independently before starting Phase 2. Phase 1 alone is valuable — it fixes the "must restart gateway.py" annoyance even without firmware consolidation.
@@ -147,10 +154,20 @@ The provisioner detects models via composition data (`parse_composition_data()`)
 
 ## 8. Files Changed Summary (Both Phases)
 
+> [!IMPORTANT]
+> **Modular rule:** All changes go into the correct module file. `main.c` stays as a thin orchestrator.
+> New ESP functionality = new `.c`/`.h` pair + update `CMakeLists.txt`. New Python functionality = edit the right module.
+
 | File | Phase | Changes |
 |------|-------|---------|
-| `gateway-pi5/gateway.py` | 1 | Auto-reconnect loop, disconnect detection, reconnect UI |
-| `gateway-pi5/gateway.py` | 2 | Scan for any universal node, failover logic |
-| `ESP/ESP-Mesh-Node-sensor-test/main/main.c` | 2 | Add GATT service, vendor client, command parser, chunked notify |
-| `ESP/ESP-Provisioner/main/main.c` | 2 | Handle dual vendor models on same node |
+| `gateway-pi5/gateway-code/dc_gateway.py` | 1 | Auto-reconnect loop, disconnect detection, reconnect guard |
+| `gateway-pi5/gateway-code/power_manager.py` | 1 | `_paused` flag for reconnection |
+| `gateway-pi5/gateway-code/tui_app.py` | 1 | Start reconnect loop from `connect_ble()` |
+| `gateway-pi5/gateway-code/dc_gateway.py` | 2 | Failover logic (try all nodes), sensing_node_count adjust |
+| `gateway-pi5/gateway-code/constants.py` | 2 | Add `"DC-Monitor"` to `DEVICE_NAME_PREFIXES` |
+| `ESP/ESP-Mesh-Node-sensor-test/main/` | 2 | New modules: `gatt_service.c/h`, `command_parser.c/h` (ported from GATT gateway) |
+| `ESP/ESP-Mesh-Node-sensor-test/main/mesh_node.c` | 2 | Add vendor CLIENT model alongside SERVER |
+| `ESP/ESP-Mesh-Node-sensor-test/main/main.c` | 2 | Add `gatt_register_services()` + `gatt_start_advertising()` calls |
+| `ESP/ESP-Mesh-Node-sensor-test/main/CMakeLists.txt` | 2 | Add new source files |
+| `ESP/ESP-Provisioner/main/provisioning.c` | 2 | Handle dual vendor models on same node |
 | `ESP/ESP_GATT_BLE_Gateway/` | 2 | **Deprecated** — kept for rollback |
