@@ -15,7 +15,7 @@ The current architecture uses a **dedicated GATT Gateway ESP32-C6** that bridges
 - No sensor data flows, no commands can be sent
 - There is no auto-reconnect or failover mechanism
 
-This is a **single point of failure** in the v0.6.1 architecture:
+This is a **single point of failure** in the v0.6.2 architecture:
 
 ```
 Pi 5 ──GATT──> GATT Gateway (SPOF) ──Mesh──> Sensor Node(s)

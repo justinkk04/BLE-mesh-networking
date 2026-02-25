@@ -13,7 +13,7 @@
 
 ---
 
-## 1. System Summary (What We Have Now — v0.6.1)
+## 1. System Summary (What We Have Now — v0.6.2)
 
 ### Architecture
 
