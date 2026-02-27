@@ -12,7 +12,12 @@ static const char *TAG = "SENSOR";
 #define I2C_SDA_PIN GPIO_NUM_6 // Wire to INA260 SDA
 #define I2C_SCL_PIN GPIO_NUM_7 // Wire to INA260 SCL
 #define I2C_FREQ_HZ 400000
-#define INA260_ADDR 0x40 // A0=GND, A1=GND (found by I2C scan) COM11 40 COM14 45
+
+// INA260 valid address range: 0x40-0x4F (depends on A0/A1 wiring)
+#define INA260_ADDR_MIN 0x40
+#define INA260_ADDR_MAX 0x4F
+
+static uint8_t ina260_addr = 0; // Auto-detected at runtime
 
 // INA260 registers
 #define INA260_REG_CONFIG 0x00
@@ -64,27 +69,34 @@ esp_err_t sensor_init(void) {
   ESP_LOGI(TAG, "I2C initialized: SDA=GPIO%d, SCL=GPIO%d, %d Hz", I2C_SDA_PIN,
            I2C_SCL_PIN, I2C_FREQ_HZ);
 
-  // Scan bus first
+  // Scan bus (diagnostic log)
   i2c_scan();
 
-  // Probe INA260 specifically
-  i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-  i2c_master_start(cmd);
-  i2c_master_write_byte(cmd, (INA260_ADDR << 1) | I2C_MASTER_WRITE, true);
-  i2c_master_stop(cmd);
-  esp_err_t ret = i2c_master_cmd_begin(I2C_PORT, cmd, pdMS_TO_TICKS(100));
-  i2c_cmd_link_delete(cmd);
+  // Auto-detect INA260 in the valid address range (0x40-0x4F)
+  ina260_addr = 0;
+  for (uint8_t addr = INA260_ADDR_MIN; addr <= INA260_ADDR_MAX; addr++) {
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, (addr << 1) | I2C_MASTER_WRITE, true);
+    i2c_master_stop(cmd);
+    esp_err_t ret = i2c_master_cmd_begin(I2C_PORT, cmd, pdMS_TO_TICKS(100));
+    i2c_cmd_link_delete(cmd);
+    if (ret == ESP_OK) {
+      ina260_addr = addr;
+      ESP_LOGI(TAG, "INA260 auto-detected at 0x%02x", ina260_addr);
+      break;
+    }
+  }
 
-  if (ret == ESP_OK) {
-    ESP_LOGI(TAG, "INA260 found at 0x%02x", INA260_ADDR);
+  if (ina260_addr != 0) {
     ina260_ok = true;
 
     // Configure: 1024-sample averaging (same as Pico code)
     uint8_t config_data[3] = {INA260_REG_CONFIG, (INA260_CONFIG >> 8) & 0xFF,
                               INA260_CONFIG & 0xFF};
-    cmd = i2c_cmd_link_create();
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (INA260_ADDR << 1) | I2C_MASTER_WRITE, true);
+    i2c_master_write_byte(cmd, (ina260_addr << 1) | I2C_MASTER_WRITE, true);
     i2c_master_write(cmd, config_data, sizeof(config_data), true);
     i2c_master_stop(cmd);
     i2c_master_cmd_begin(I2C_PORT, cmd, pdMS_TO_TICKS(100));
@@ -93,7 +105,8 @@ esp_err_t sensor_init(void) {
     vTaskDelay(pdMS_TO_TICKS(200)); // Let config settle
     ESP_LOGI(TAG, "INA260 configured (1024-sample averaging)");
   } else {
-    ESP_LOGE(TAG, "INA260 NOT FOUND at 0x%02x! Check wiring.", INA260_ADDR);
+    ESP_LOGE(TAG, "INA260 NOT FOUND in range 0x%02x-0x%02x! Check wiring.",
+             INA260_ADDR_MIN, INA260_ADDR_MAX);
     ina260_ok = false;
   }
 
@@ -109,10 +122,10 @@ float ina260_read_voltage(void) {
 
   i2c_cmd_handle_t cmd = i2c_cmd_link_create();
   i2c_master_start(cmd);
-  i2c_master_write_byte(cmd, (INA260_ADDR << 1) | I2C_MASTER_WRITE, true);
+  i2c_master_write_byte(cmd, (ina260_addr << 1) | I2C_MASTER_WRITE, true);
   i2c_master_write_byte(cmd, reg, true);
   i2c_master_start(cmd); // Repeated start
-  i2c_master_write_byte(cmd, (INA260_ADDR << 1) | I2C_MASTER_READ, true);
+  i2c_master_write_byte(cmd, (ina260_addr << 1) | I2C_MASTER_READ, true);
   i2c_master_read(cmd, data, 2, I2C_MASTER_LAST_NACK);
   i2c_master_stop(cmd);
   esp_err_t ret = i2c_master_cmd_begin(I2C_PORT, cmd, pdMS_TO_TICKS(100));
@@ -136,10 +149,10 @@ float ina260_read_current(void) {
 
   i2c_cmd_handle_t cmd = i2c_cmd_link_create();
   i2c_master_start(cmd);
-  i2c_master_write_byte(cmd, (INA260_ADDR << 1) | I2C_MASTER_WRITE, true);
+  i2c_master_write_byte(cmd, (ina260_addr << 1) | I2C_MASTER_WRITE, true);
   i2c_master_write_byte(cmd, reg, true);
   i2c_master_start(cmd);
-  i2c_master_write_byte(cmd, (INA260_ADDR << 1) | I2C_MASTER_READ, true);
+  i2c_master_write_byte(cmd, (ina260_addr << 1) | I2C_MASTER_READ, true);
   i2c_master_read(cmd, data, 2, I2C_MASTER_LAST_NACK);
   i2c_master_stop(cmd);
   esp_err_t ret = i2c_master_cmd_begin(I2C_PORT, cmd, pdMS_TO_TICKS(100));

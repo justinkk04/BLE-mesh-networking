@@ -1,0 +1,21 @@
+create venv
+    python -m venv .venv    
+activate venv
+    .venv\Scripts\activate
+
+install requirements
+    pip install -r requirements.txt
+    or
+    pip install bleak>=0.21.0 flask textual 
+
+
+
+run scan
+    python scan_ble.py
+run gateway
+    python gateway.py
+
+address of new gattgateway
+    10:51:DB:01:E8:A6
+
+python gateway.py --address  10:51:DB:01:E8:A6
