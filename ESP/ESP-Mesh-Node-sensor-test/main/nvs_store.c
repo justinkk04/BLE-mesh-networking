@@ -20,5 +20,10 @@ void restore_node_state(void) {
              node_state.net_idx, node_state.app_idx, node_state.addr);
     cached_net_idx = node_state.net_idx;
     cached_app_idx = node_state.app_idx;
+    // Restore vendor bound flag; also infer from valid app_idx
+    if (node_state.vnd_bound_flag || cached_app_idx != 0xFFFF) {
+      vnd_bound = true;
+      ESP_LOGI("NVS", "Vendor client bound (restored), vnd_bound=true");
+    }
   }
 }

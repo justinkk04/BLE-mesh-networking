@@ -15,3 +15,9 @@ CONFIG_BLE_MESH_GENERIC_ONOFF_CLI=y
 
 # Enable persistent storage for mesh state across power cycles
 CONFIG_BLE_MESH_SETTINGS=y
+
+# Enable NimBLE for custom GATT service (required by gatt_service.c)
+CONFIG_BT_NIMBLE_ENABLED=y
+
+# Allow larger ATT MTU for sensor data notifications (default 23 is too small)
+CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU=185

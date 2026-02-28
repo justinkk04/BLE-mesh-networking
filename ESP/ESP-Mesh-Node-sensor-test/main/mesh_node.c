@@ -2,6 +2,8 @@
 #include "nvs_store.h"
 #include "command.h"
 #include "load_control.h"
+#include "gatt_service.h"
+#include "node_tracker.h"
 #include "esp_log.h"
 #include "esp_ble_mesh_common_api.h"
 #include "esp_ble_mesh_config_model_api.h"
@@ -14,13 +16,6 @@
 
 static const char *TAG = "MESH_NODE";
 
-#define CID_ESP 0x02E5
-
-// Vendor model definitions (shared with gateway and provisioner)
-#define VND_MODEL_ID_SERVER 0x0001
-#define VND_OP_SEND ESP_BLE_MESH_MODEL_OP_3(0x00, CID_ESP)
-#define VND_OP_STATUS ESP_BLE_MESH_MODEL_OP_3(0x01, CID_ESP)
-
 // UUID with prefix 0xdd 0xdd for auto-provisioning
 uint8_t dev_uuid[16] = {0xdd, 0xdd};
 
@@ -31,14 +26,46 @@ struct mesh_node_state node_state = {
     .addr = 0x0000,
     .onoff = 0,
     .tid = 0,
+    .vnd_bound_flag = 0,
 };
 
 // Cached indices for sending
 uint16_t cached_net_idx = 0xFFFF;
 uint16_t cached_app_idx = 0xFFFF;
 
+// Vendor client state
+bool vnd_bound = false;
+bool vnd_send_busy = false;
+uint16_t vnd_send_target_addr = 0x0000;
+static TickType_t vnd_send_start_tick = 0;
+
+// Monitor mode state (shared with monitor.c and command_parser.c)
+uint16_t monitor_target_addr = 0;
+bool monitor_waiting_response = false;
+
 // ============== Mesh Models ==============
 static esp_ble_mesh_client_t onoff_client;
+
+// --- Vendor SERVER model: receives commands from mesh ---
+static esp_ble_mesh_model_op_t vnd_srv_op[] = {
+    ESP_BLE_MESH_MODEL_OP(VND_OP_SEND, 1),
+    ESP_BLE_MESH_MODEL_OP_END,
+};
+
+// --- Vendor CLIENT model: sends commands TO other mesh nodes ---
+static const esp_ble_mesh_client_op_pair_t vnd_op_pair[] = {
+    {VND_OP_SEND, VND_OP_STATUS},
+};
+
+static esp_ble_mesh_client_t vendor_client = {
+    .op_pair_size = ARRAY_SIZE(vnd_op_pair),
+    .op_pair = vnd_op_pair,
+};
+
+static esp_ble_mesh_model_op_t vnd_cli_op[] = {
+    ESP_BLE_MESH_MODEL_OP(VND_OP_STATUS, 1),
+    ESP_BLE_MESH_MODEL_OP_END,
+};
 
 static esp_ble_mesh_cfg_srv_t config_server = {
     .net_transmit = ESP_BLE_MESH_TRANSMIT(3, 20),
@@ -75,14 +102,10 @@ static esp_ble_mesh_model_t root_models[] = {
     ESP_BLE_MESH_MODEL_GEN_ONOFF_SRV(&onoff_srv_pub, &onoff_server),
 };
 
-// Vendor model: receives commands from gateway, sends sensor data back
-static esp_ble_mesh_model_op_t vnd_op[] = {
-    ESP_BLE_MESH_MODEL_OP(VND_OP_SEND, 1),
-    ESP_BLE_MESH_MODEL_OP_END,
-};
-
+// Both vendor models on the same element
 static esp_ble_mesh_model_t vnd_models[] = {
-    ESP_BLE_MESH_VENDOR_MODEL(CID_ESP, VND_MODEL_ID_SERVER, vnd_op, NULL, NULL),
+    ESP_BLE_MESH_VENDOR_MODEL(CID_ESP, VND_MODEL_ID_SERVER, vnd_srv_op, NULL, NULL),
+    ESP_BLE_MESH_VENDOR_MODEL(CID_ESP, VND_MODEL_ID_CLIENT, vnd_cli_op, NULL, &vendor_client),
 };
 
 static esp_ble_mesh_elem_t elements[] = {
@@ -100,6 +123,82 @@ static esp_ble_mesh_prov_t provision = {
     .output_size = 0,
     .output_actions = 0,
 };
+
+// ============== Send Mesh OnOff Command (fallback) ==============
+esp_err_t send_mesh_onoff(uint16_t target_addr, uint8_t onoff) {
+  esp_ble_mesh_generic_client_set_state_t set = {0};
+  esp_ble_mesh_client_common_param_t common = {0};
+
+  if (cached_app_idx == 0xFFFF) {
+    ESP_LOGE(TAG, "Not configured yet");
+    return ESP_ERR_INVALID_STATE;
+  }
+
+  ESP_LOGI(TAG, "Sending OnOff=%d to 0x%04x", onoff, target_addr);
+
+  common.opcode = ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET;
+  common.model = onoff_client.model;
+  common.ctx.net_idx = cached_net_idx;
+  common.ctx.app_idx = cached_app_idx;
+  common.ctx.addr = target_addr;
+  common.ctx.send_ttl = 3;
+  common.msg_timeout = 2000;
+
+  set.onoff_set.op_en = false;
+  set.onoff_set.onoff = onoff;
+  set.onoff_set.tid = node_state.tid++;
+
+  return esp_ble_mesh_generic_client_set_state(&common, &set);
+}
+
+// ============== Send Vendor Command ==============
+esp_err_t send_vendor_command(uint16_t target_addr, const char *cmd,
+                              uint16_t len) {
+  bool is_group = (target_addr == MESH_GROUP_ADDR);
+
+  // Skip busy-wait for group sends - multiple nodes respond asynchronously
+  if (!is_group) {
+    int wait_loops = 0;
+    while (vnd_send_busy && wait_loops < 50) {
+      TickType_t elapsed = xTaskGetTickCount() - vnd_send_start_tick;
+      if (elapsed > pdMS_TO_TICKS(VND_SEND_TIMEOUT_MS)) {
+        ESP_LOGW(TAG, "Send busy timeout (%lu ms), clearing flag",
+                 (unsigned long)(elapsed * portTICK_PERIOD_MS));
+        vnd_send_busy = false;
+        vnd_send_target_addr = 0x0000;
+        break;
+      }
+      vTaskDelay(pdMS_TO_TICKS(100));
+      wait_loops++;
+    }
+  }
+
+  esp_ble_mesh_msg_ctx_t ctx = {0};
+  ctx.net_idx = cached_net_idx;
+  ctx.app_idx = cached_app_idx;
+  ctx.addr = target_addr;
+  ctx.send_ttl = 7;
+
+  ESP_LOGI(TAG, "Vendor SEND to 0x%04x: %.*s", target_addr, len, cmd);
+
+  if (!is_group) {
+    vnd_send_busy = true;
+    vnd_send_target_addr = target_addr;
+    vnd_send_start_tick = xTaskGetTickCount();
+  }
+
+  esp_err_t err = esp_ble_mesh_client_model_send_msg(
+      vendor_client.model, &ctx, VND_OP_SEND, len, (uint8_t *)cmd,
+      5000, true, ROLE_NODE);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Vendor send_msg failed: %d", err);
+    if (!is_group) {
+      vnd_send_busy = false;
+      vnd_send_target_addr = 0x0000;
+    }
+  }
+  return err;
+}
 
 // ============== Mesh Callbacks ==============
 static void prov_complete(uint16_t net_idx, uint16_t addr, uint8_t flags,
@@ -121,6 +220,7 @@ static void provisioning_cb(esp_ble_mesh_prov_cb_event_t event,
   case ESP_BLE_MESH_PROV_REGISTER_COMP_EVT:
     ESP_LOGI(TAG, "Mesh stack registered");
     onoff_client.model = &elements[0].sig_models[1];
+    vendor_client.model = &vnd_models[1]; // CLIENT is index 1
     restore_node_state();
     break;
 
@@ -169,31 +269,38 @@ static void config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
       save_node_state();
       break;
 
-    case ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND:
+    case ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND: {
+      uint16_t model_id = param->value.state_change.mod_app_bind.model_id;
+      uint16_t company_id = param->value.state_change.mod_app_bind.company_id;
       ESP_LOGI(TAG,
                "Model bound: elem=0x%04x, app=0x%04x, model=0x%04x, cid=0x%04x",
                param->value.state_change.mod_app_bind.element_addr,
                param->value.state_change.mod_app_bind.app_idx,
-               param->value.state_change.mod_app_bind.model_id,
-               param->value.state_change.mod_app_bind.company_id);
+               model_id, company_id);
 
-      if (param->value.state_change.mod_app_bind.company_id == 0xFFFF &&
-          (param->value.state_change.mod_app_bind.model_id ==
-               ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_CLI ||
-           param->value.state_change.mod_app_bind.model_id ==
-               ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV)) {
-        node_state.app_idx = param->value.state_change.mod_app_bind.app_idx;
-        cached_app_idx = node_state.app_idx;
-        save_node_state();
-        ESP_LOGI(TAG, "Node fully configured and ready!");
+      node_state.app_idx = param->value.state_change.mod_app_bind.app_idx;
+      cached_app_idx = node_state.app_idx;
+
+      if (company_id == 0xFFFF &&
+          (model_id == ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_CLI ||
+           model_id == ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV)) {
+        ESP_LOGI(TAG, "OnOff model bound");
       }
-      // Also handle vendor model bind
-      if (param->value.state_change.mod_app_bind.company_id == CID_ESP &&
-          param->value.state_change.mod_app_bind.model_id ==
-              VND_MODEL_ID_SERVER) {
-        ESP_LOGI(TAG, "Vendor Server model bound - full command support!");
+
+      if (company_id == CID_ESP && model_id == VND_MODEL_ID_SERVER) {
+        ESP_LOGI(TAG, "Vendor Server model bound - mesh command support!");
       }
+
+      if (company_id == CID_ESP && model_id == VND_MODEL_ID_CLIENT) {
+        vnd_bound = true;
+        node_state.vnd_bound_flag = 1;
+        ESP_LOGI(TAG, "Vendor Client bound - GATT gateway capability active!");
+        gatt_notify_sensor_data("MESH_READY:VENDOR", 17);
+      }
+
+      save_node_state();
       break;
+    }
 
     default:
       break;
@@ -201,8 +308,7 @@ static void config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
   }
 }
 
-// Handle incoming OnOff commands - now executes directly instead of UART
-// forward
+// Handle incoming OnOff commands - executes directly
 static void generic_server_cb(esp_ble_mesh_generic_server_cb_event_t event,
                               esp_ble_mesh_generic_server_cb_param_t *param) {
   ESP_LOGI(TAG, "Server event: 0x%02x, opcode: 0x%04" PRIx32 ", src: 0x%04x",
@@ -225,7 +331,6 @@ static void generic_server_cb(esp_ble_mesh_generic_server_cb_event_t event,
       uint8_t onoff = param->value.set.onoff.onoff;
       ESP_LOGI(TAG, "OnOff SET: %d from 0x%04x", onoff, param->ctx.addr);
 
-      // Direct control: ON = set duty 100%, OFF = set duty 0%
       if (onoff) {
         set_duty(100);
       } else {
@@ -257,29 +362,39 @@ static void generic_server_cb(esp_ble_mesh_generic_server_cb_event_t event,
   }
 }
 
-// Client callbacks
+// Client callbacks - forward OnOff responses to Pi 5 via GATT
 static void generic_client_cb(esp_ble_mesh_generic_client_cb_event_t event,
                               esp_ble_mesh_generic_client_cb_param_t *param) {
-  ESP_LOGI(TAG, "Client event: 0x%02x, opcode: 0x%04" PRIx32, event,
-           param->params->opcode);
+  char buf[64];
+  uint16_t src_addr = param->params->ctx.addr;
+
+  ESP_LOGI(TAG, "Client event: 0x%02x from 0x%04x", event, src_addr);
 
   switch (event) {
   case ESP_BLE_MESH_GENERIC_CLIENT_GET_STATE_EVT:
     if (param->params->opcode == ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET) {
-      ESP_LOGI(TAG, "OnOff status: 0x%02x",
+      int node_id =
+          (src_addr >= NODE_BASE_ADDR) ? (src_addr - NODE_BASE_ADDR) : 0;
+      snprintf(buf, sizeof(buf), "NODE%d:ONOFF:%d", node_id,
                param->status_cb.onoff_status.present_onoff);
+      gatt_notify_sensor_data(buf, strlen(buf));
     }
     break;
 
   case ESP_BLE_MESH_GENERIC_CLIENT_SET_STATE_EVT:
     if (param->params->opcode == ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET) {
-      ESP_LOGI(TAG, "OnOff set confirmed: 0x%02x",
+      int node_id =
+          (src_addr >= NODE_BASE_ADDR) ? (src_addr - NODE_BASE_ADDR) : 0;
+      snprintf(buf, sizeof(buf), "NODE%d:ACK:%d", node_id,
                param->status_cb.onoff_status.present_onoff);
+      gatt_notify_sensor_data(buf, strlen(buf));
     }
     break;
 
   case ESP_BLE_MESH_GENERIC_CLIENT_TIMEOUT_EVT:
-    ESP_LOGW(TAG, "Client timeout");
+    snprintf(buf, sizeof(buf), "TIMEOUT:0x%04x", src_addr);
+    gatt_notify_sensor_data(buf, strlen(buf));
+    ESP_LOGW(TAG, "Mesh timeout for 0x%04x", src_addr);
     break;
 
   default:
@@ -287,15 +402,15 @@ static void generic_client_cb(esp_ble_mesh_generic_client_cb_event_t event,
   }
 }
 
-// ============== Vendor Model Callback ==============
-// Receives commands from GATT Gateway, processes locally, responds
-// synchronously
+// ============== Vendor Model Callback (Dual Role) ==============
+// SERVER role: receives commands from mesh, processes locally, responds
+// CLIENT role: receives responses from other nodes, forwards to Pi 5 via GATT
 static void custom_model_cb(esp_ble_mesh_model_cb_event_t event,
                             esp_ble_mesh_model_cb_param_t *param) {
   switch (event) {
   case ESP_BLE_MESH_MODEL_OPERATION_EVT:
     if (param->model_operation.opcode == VND_OP_SEND) {
-      // Extract text command
+      // ---- SERVER role: received a command, process locally ----
       char cmd[64];
       uint16_t len = param->model_operation.length;
       if (len >= sizeof(cmd))
@@ -306,15 +421,11 @@ static void custom_model_cb(esp_ble_mesh_model_cb_event_t event,
       ESP_LOGI(TAG, "Vendor SEND from 0x%04x: %s",
                param->model_operation.ctx->addr, cmd);
 
-      // Process command and respond synchronously (no UART, no queue!)
       char response[128];
       int resp_len = process_command(cmd, response, sizeof(response));
 
-      // Send response back through mesh immediately
       esp_ble_mesh_msg_ctx_t ctx = *param->model_operation.ctx;
-      // When message arrived via group address (0xC000), recv_dst is the
-      // group addr.  The server send uses recv_dst as the reply source,
-      // but we can't send FROM a group address — override with our unicast.
+      // When message arrived via group address, override recv_dst with unicast
       if (ctx.recv_dst != node_state.addr) {
         ctx.recv_dst = node_state.addr;
       }
@@ -326,18 +437,104 @@ static void custom_model_cb(esp_ble_mesh_model_cb_event_t event,
       } else {
         ESP_LOGI(TAG, "Response -> 0x%04x: %s", ctx.addr, response);
       }
+    } else if (param->model_operation.opcode == VND_OP_STATUS) {
+      // ---- CLIENT role: received response from another node ----
+      // Forward to Pi 5 via GATT notify
+      char buf[SENSOR_DATA_MAX_LEN];
+      uint16_t len = param->model_operation.length;
+      uint16_t src = param->model_operation.ctx->addr;
+
+      if (len >= sizeof(buf))
+        len = sizeof(buf) - 1;
+      int node_id = (src >= NODE_BASE_ADDR) ? (src - NODE_BASE_ADDR) : 0;
+
+      if (src == vnd_send_target_addr || vnd_send_target_addr == 0x0000) {
+        vnd_send_busy = false;
+        vnd_send_target_addr = 0x0000;
+      }
+
+      register_known_node(src);
+
+      int hdr_len = snprintf(buf, sizeof(buf), "NODE%d:DATA:", node_id);
+      if (hdr_len + len < (int)sizeof(buf)) {
+        memcpy(buf + hdr_len, param->model_operation.msg, len);
+        buf[hdr_len + len] = '\0';
+        gatt_notify_sensor_data(buf, hdr_len + len);
+      }
+
+      ESP_LOGI(TAG, "Vendor STATUS from 0x%04x (%d bytes)", src, len);
+
+      if (monitor_target_addr != 0) {
+        monitor_waiting_response = false;
+      }
     }
     break;
 
   case ESP_BLE_MESH_MODEL_SEND_COMP_EVT:
     if (param->model_send_comp.err_code) {
       ESP_LOGE(TAG, "Vendor send COMP err=%d", param->model_send_comp.err_code);
+      vnd_send_busy = false;
+      vnd_send_target_addr = 0x0000;
+      gatt_notify_sensor_data("ERROR:MESH_SEND_FAIL", 20);
     } else {
       ESP_LOGI(TAG, "Vendor send COMP OK");
     }
     break;
 
+  case ESP_BLE_MESH_CLIENT_MODEL_SEND_TIMEOUT_EVT: {
+    uint16_t timeout_target = vnd_send_target_addr;
+    if (timeout_target == 0x0000 && !vnd_send_busy) {
+      ESP_LOGI(TAG, "Group send timeout (expected, responses already received)");
+      break;
+    }
+    ESP_LOGW(TAG, "Vendor message timeout (target was 0x%04x)", timeout_target);
+    if (timeout_target > NODE_BASE_ADDR + known_node_count) {
+      discovery_complete = true;
+      ESP_LOGI(TAG, "Discovery complete (no node at 0x%04x)", timeout_target);
+    }
+    vnd_send_busy = false;
+    vnd_send_target_addr = 0x0000;
+    monitor_waiting_response = false;
+    if (monitor_target_addr == 0) {
+      gatt_notify_sensor_data("ERROR:MESH_TIMEOUT", 18);
+    }
+    break;
+  }
+
+  case ESP_BLE_MESH_CLIENT_MODEL_RECV_PUBLISH_MSG_EVT:
+    if (param->client_recv_publish_msg.opcode == VND_OP_STATUS) {
+      char buf[SENSOR_DATA_MAX_LEN];
+      uint16_t len = param->client_recv_publish_msg.length;
+      uint16_t src = param->client_recv_publish_msg.ctx->addr;
+
+      if (len >= sizeof(buf))
+        len = sizeof(buf) - 1;
+      int node_id = (src >= NODE_BASE_ADDR) ? (src - NODE_BASE_ADDR) : 0;
+
+      if (src == vnd_send_target_addr || vnd_send_target_addr == 0x0000) {
+        vnd_send_busy = false;
+        vnd_send_target_addr = 0x0000;
+      }
+
+      register_known_node(src);
+
+      int hdr_len = snprintf(buf, sizeof(buf), "NODE%d:DATA:", node_id);
+      if (hdr_len + len < (int)sizeof(buf)) {
+        memcpy(buf + hdr_len, param->client_recv_publish_msg.msg, len);
+        buf[hdr_len + len] = '\0';
+        gatt_notify_sensor_data(buf, hdr_len + len);
+      }
+
+      ESP_LOGI(TAG, "Vendor STATUS (publish) from 0x%04x (%d bytes)", src, len);
+
+      if (monitor_target_addr != 0) {
+        monitor_waiting_response = false;
+      }
+    }
+    break;
+
   default:
+    ESP_LOGD(TAG, "Unhandled model event: 0x%02x", event);
     break;
   }
 }
@@ -358,6 +555,13 @@ esp_err_t ble_mesh_init(void) {
     return err;
   }
 
+  // Initialize vendor client model (required for op_pair timeout tracking)
+  err = esp_ble_mesh_client_model_init(&vnd_models[1]);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Vendor client init failed: %d", err);
+    return err;
+  }
+
   err = esp_ble_mesh_node_prov_enable(ESP_BLE_MESH_PROV_ADV |
                                       ESP_BLE_MESH_PROV_GATT);
   if (err != ESP_OK) {
@@ -366,8 +570,9 @@ esp_err_t ble_mesh_init(void) {
   }
 
   ESP_LOGI(TAG, "============================================");
-  ESP_LOGI(TAG, "  BLE Mesh Node Ready");
+  ESP_LOGI(TAG, "  BLE Mesh Universal Node Ready");
   ESP_LOGI(TAG, "  UUID: %s", bt_hex(dev_uuid, 16));
+  ESP_LOGI(TAG, "  Models: Vendor Server + Vendor Client");
   ESP_LOGI(TAG, "  Waiting for provisioner...");
   ESP_LOGI(TAG, "============================================");
 
