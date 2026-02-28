@@ -49,6 +49,7 @@ class PowerManager:
         self._poll_generation: int = 0
         self._polling = False  # True while a poll cycle is active
         self._needs_bootstrap = False
+        self._paused = False  # Set True by reconnect loop to pause polling
 
     # ---- Public API ----
 
@@ -281,6 +282,9 @@ class PowerManager:
                 await asyncio.sleep(2.0)
             self._polling = True
             while self.threshold_mw is not None:
+                if self._paused:
+                    await asyncio.sleep(1.0)
+                    continue
                 await self._poll_all_nodes()
                 await self._wait_for_responses(timeout=4.0)
                 self._mark_stale_nodes()

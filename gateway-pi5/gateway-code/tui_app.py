@@ -127,29 +127,42 @@ class MeshGatewayApp(App):
             self.log_message("No gateways found. Restart to try again.", style="bold red")
             return
 
-        # Select device
+        # Build ordered device list: target address first (if given), then the rest
         if self.target_address:
-            device = next(
+            target_dev = next(
                 (d for d in devices if d.address.upper() == self.target_address.upper()),
-                devices[0],
+                None,
             )
+            ordered = ([target_dev] if target_dev else []) + [
+                d for d in devices if d != target_dev
+            ]
         else:
-            device = devices[0]
+            ordered = list(devices)
 
-        # Connect (start_notify binds D-Bus handlers to BLE thread's loop)
-        success = await bt.submit_async(gw.connect_to_node(device))
-        if success:
+        # Try each device until we find one with the GATT service (subscribe succeeds)
+        connected_device = None
+        for device in ordered:
+            success = await bt.submit_async(gw.connect_to_node(device))
+            if success:
+                connected_device = device
+                break
+
+        if connected_device:
             # Derive sensing node count from the BLE scan:
             # total mesh devices found - 1 (the GATT gateway we just connected to)
             gw.sensing_node_count = max(0, len(devices) - 1)
             self.log_message(
-                f"Connected to {device.name or device.address} "
+                f"Connected to {connected_device.name or connected_device.address} "
                 f"({gw.sensing_node_count} sensing node(s) in mesh)",
                 style="bold green")
             self._connected = True
             self.update_status()
+            # Start auto-reconnect monitor (v0.7.0 Phase 1)
+            self._ble_thread.submit(self.gateway._auto_reconnect_loop())
         else:
-            self.log_message("Connection failed", style="bold red")
+            self.log_message(
+                "No device with GATT service found. Use --address to specify.",
+                style="bold red")
 
     # ---- Command Handling ----
 
@@ -476,6 +489,8 @@ class MeshGatewayApp(App):
 
     def on_unmount(self) -> None:
         """Clean up BLE thread when app exits."""
+        # Signal reconnect loop to stop
+        self.gateway.running = False
         if self._ble_thread:
             try:
                 if self.gateway.client and self.gateway.client.is_connected:

@@ -46,6 +46,10 @@ class DCMonitorGateway:
         self._node_events: dict[str, threading.Event] = {}  # Signaled when node responds
         self.known_nodes: set[str] = set()  # Node IDs that have actually responded with sensor data
         self.sensing_node_count = 0  # Set from BLE scan: total_mesh_devices - 1 (GATT gateway)
+        # Reconnection state (v0.7.0 Phase 1)
+        self._was_connected = False
+        self._reconnecting = False
+        self._last_connected_address = None
 
     def log(self, text: str, style: str = "", _from_thread: bool = False,
             _debug: bool = False):
@@ -208,7 +212,7 @@ class DCMonitorGateway:
         """Connect to a specific node and subscribe to notifications"""
         self.log(f"Connecting to {device.name or device.address}...")
 
-        self.client = BleakClient(device.address)
+        self.client = BleakClient(device.address, dangerous_use_bleak_cache=False)
         try:
             await self.client.connect()
         except Exception as e:
@@ -227,12 +231,22 @@ class DCMonitorGateway:
             await self.client.start_notify(SENSOR_DATA_CHAR_UUID, self.notification_handler)
             self.log("Subscribed to sensor notifications")
         except Exception as e:
-            self.log(f"Could not subscribe: {e}")
+            self.log(f"Could not subscribe: {e} — skipping this device")
+            # This device doesn't have the DC01 GATT service (e.g. relay/sensor node)
+            try:
+                await self.client.disconnect()
+            except Exception:
+                pass
+            self.client = None
+            self.connected_device = None
+            return False
 
         # Report negotiated MTU
         mtu = self.client.mtu_size
         self.log(f"MTU: {mtu}")
 
+        self._was_connected = True
+        self._last_connected_address = device.address
         return True
 
     async def disconnect(self):
@@ -248,8 +262,13 @@ class DCMonitorGateway:
 
     async def send_command(self, cmd: str, _silent: bool = False):
         """Send raw command string to GATT gateway"""
+        if self._reconnecting:
+            if not _silent:
+                self.log("[WARN] Cannot send — reconnecting...", style="yellow")
+            return False
         if not self.client or not self.client.is_connected:
-            self.log("Not connected")
+            if not _silent:
+                self.log("[WARN] Not connected", style="yellow")
             return False
 
         try:
@@ -344,6 +363,77 @@ class DCMonitorGateway:
         """Start continuous monitoring on a mesh node"""
         self._monitoring = True
         return await self.send_to_node(node, "MONITOR")
+
+    # ---- Auto-Reconnect (v0.7.0 Phase 1) ----
+
+    async def _auto_reconnect_loop(self):
+        """Monitor BLE connection health and auto-reconnect on disconnect.
+
+        Runs as a background task on the BLE thread's event loop.
+        Checks connection every 2 seconds. On disconnect:
+        1. Logs the event
+        2. Pauses PM polling
+        3. Rescans for the gateway
+        4. Reconnects and resubscribes
+        5. Resumes PM polling
+        """
+        while self.running:
+            await asyncio.sleep(2.0)
+
+            if self.client is None or not self.client.is_connected:
+                if self._was_connected:
+                    self.log("[RECONNECT] Connection lost! Attempting reconnect...",
+                             style="bold red", _from_thread=True)
+                    self._was_connected = False
+                    self._reconnecting = True
+
+                    # Pause PM if active
+                    pm = self._power_manager
+                    if pm and pm.threshold_mw is not None:
+                        pm._paused = True
+                        self.log("[RECONNECT] PowerManager paused", _from_thread=True)
+
+                    # Clean up old client
+                    self.client = None
+                    self.connected_device = None
+
+                if not self._reconnecting:
+                    continue
+
+                # Attempt reconnect
+                try:
+                    devices = await self.scan_for_nodes(
+                        timeout=5.0,
+                        target_address=self._last_connected_address
+                    )
+                    if not devices:
+                        # Try scanning without target address (any gateway)
+                        devices = await self.scan_for_nodes(timeout=5.0)
+
+                    if devices:
+                        success = await self.connect_to_node(devices[0])
+                        if success:
+                            self.log("[RECONNECT] Reconnected successfully!",
+                                     style="bold green", _from_thread=True)
+                            self._was_connected = True
+                            self._reconnecting = False
+                            self._last_connected_address = devices[0].address
+
+                            # Resume PM
+                            pm = self._power_manager
+                            if pm and pm._paused:
+                                pm._paused = False
+                                self.log("[RECONNECT] PowerManager resumed",
+                                         _from_thread=True)
+                        else:
+                            self.log("[RECONNECT] Connect failed, retrying in 5s...",
+                                     _from_thread=True)
+                    else:
+                        self.log("[RECONNECT] No gateway found, retrying in 5s...",
+                                 _from_thread=True)
+                except Exception as e:
+                    self.log(f"[RECONNECT] Error: {e}, retrying in 5s...",
+                             _from_thread=True)
 
     # ---- Legacy plain CLI interactive mode (--no-tui) ----
 

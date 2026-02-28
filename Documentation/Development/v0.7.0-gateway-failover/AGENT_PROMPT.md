@@ -245,7 +245,7 @@ Then read the MODULAR ESP firmware:
 1. `idf.py build` — must compile with no errors
 2. Erase + flash provisioner, then erase + flash one universal node
 3. Provisioner serial output shows BOTH vendor models bound
-4. Connect from Pi 5 with `gateway.py --address <MAC>` — the GATT service should be discoverable
+4. Connect from Pi 5 with `gateway.py` — Phase 1's device-probing logic will auto-discover the GATT service (no `--address` needed)
 5. `0:READ` returns real sensor data (self-addressed, local processing)
 
 Refer to Sections 3-4 of GATEWAY_FAILOVER_IMPLEMENTATION.md for exact code changes per subsection.
