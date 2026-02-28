@@ -85,6 +85,21 @@ self._paused = False
 
 ---
 
+### 1. Phase 1: Backend API + WebSocket + SQLite
+
+* [x] **Create SQLite Database Module**
+  * `db.py`: initialize DB, schema, and `insert_reading()` / `get_history()` functions.
+* [x] **Create Web Server Module**
+  * `web_server.py`: initialize FastAPI, provide REST endpoints (`/api/state`, `/api/history`, `/api/command`), and `ws://` WebSocket.
+* [x] **Modify Core Gateway (`dc_gateway.py`)**
+  * Fire events to `db.insert_reading` and `web_server.broadcast` conditionally when Web UI is enabled.
+* [x] **Modify Power Manager (`power_manager.py`)**
+  * Broadcast `pm_update` events via WebSocket on state changes.
+* [x] **Update CLI & Entrypoint (`gateway.py`)**
+  * Add `--web`, `--web-only`, and `--web-port` arguments.
+* [x] **Update TUI (`tui_app.py`)**
+  * Start `uvicorn` web server concurrently with BLE loop if `--web` is present.
+
 ## 2. Phase 1: Backend — FastAPI + WebSocket Server
 
 ### 2.1 Create `db.py` — SQLite Database Module
@@ -530,54 +545,54 @@ ble_thread.submit(server.serve())
 
 **Design principles:**
 
-- Glassmorphism cards with `backdrop-filter: blur(8px)`
-- Smooth CSS transitions on all state changes (0.3-0.4s ease)
-- Subtle glow effects on active/connected elements
-- Micro-animations on data updates (number spin-up)
-- Responsive: desktop (3-col), tablet (2-col), phone (1-col)
+* Glassmorphism cards with `backdrop-filter: blur(8px)`
+* Smooth CSS transitions on all state changes (0.3-0.4s ease)
+* Subtle glow effects on active/connected elements
+* Micro-animations on data updates (number spin-up)
+* Responsive: desktop (3-col), tablet (2-col), phone (1-col)
 
 ### 3.2 Module Architecture
 
 **`app.js`** — Central WebSocket manager:
 
-- Opens WebSocket to `ws://<host>/ws`
-- Parses incoming messages by `type` field
-- Dispatches to registered handlers (`topology.onData()`, `nodes.onData()`, etc.)
-- Auto-reconnects with exponential backoff (1s, 2s, 4s, max 30s)
-- Exports `sendCommand(cmd)` for other modules
+* Opens WebSocket to `ws://<host>/ws`
+* Parses incoming messages by `type` field
+* Dispatches to registered handlers (`topology.onData()`, `nodes.onData()`, etc.)
+* Auto-reconnects with exponential backoff (1s, 2s, 4s, max 30s)
+* Exports `sendCommand(cmd)` for other modules
 
 **`topology.js`** — D3.js mesh graph:
 
-- Builds nodes: Pi 5 (purple), connected node (orange glow), remote nodes (green), relays (blue)
-- Links: Pi 5 → connected node, connected node → remote nodes
-- Only restarts D3 force simulation on topology changes (add/remove node), not on data updates
-- Click node → highlight, show details in sidebar
-- Node pulse animation on data receive
+* Builds nodes: Pi 5 (purple), connected node (orange glow), remote nodes (green), relays (blue)
+* Links: Pi 5 → connected node, connected node → remote nodes
+* Only restarts D3 force simulation on topology changes (add/remove node), not on data updates
+* Click node → highlight, show details in sidebar
+* Node pulse animation on data receive
 
 **`nodes.js`** — Node card grid:
 
-- One card per sensing node
-- Shows: duty %, voltage, current, power, commanded duty
-- Power bar visualization (colored fill based on % of budget)
-- ⚙️ menu: Set Duty, Read, Stop
-- Status badge: "online" (green) / "stale" (yellow, >10s) / "offline" (red, >30s)
-- Smooth CSS transitions between states
+* One card per sensing node
+* Shows: duty %, voltage, current, power, commanded duty
+* Power bar visualization (colored fill based on % of budget)
+* ⚙️ menu: Set Duty, Read, Stop
+* Status badge: "online" (green) / "stale" (yellow, >10s) / "offline" (red, >30s)
+* Smooth CSS transitions between states
 
 **`charts.js`** — Time-series charts:
 
-- Chart.js line charts for power over time per node
-- Loads initial data from `GET /api/history`
-- Appends new points from WebSocket `sensor_data` messages
-- Time window selector: 5m, 30m, 1h, 24h
-- Auto-scrolling X axis
+* Chart.js line charts for power over time per node
+* Loads initial data from `GET /api/history`
+* Appends new points from WebSocket `sensor_data` messages
+* Time window selector: 5m, 30m, 1h, 24h
+* Auto-scrolling X axis
 
 **`console.js`** — Live command console:
 
-- Input field at bottom
-- Scrolling log output above
-- Receives `log` WebSocket messages for real-time streaming
-- Sends commands via `app.sendCommand()`
-- Command history (up/down arrow)
+* Input field at bottom
+* Scrolling log output above
+* Receives `log` WebSocket messages for real-time streaming
+* Sends commands via `app.sendCommand()`
+* Command history (up/down arrow)
 
 ### 3.3 HTML Structure
 

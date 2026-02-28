@@ -49,6 +49,12 @@ def main():
     parser.add_argument("--timeout", type=float, default=10.0, help="Scan timeout")
     parser.add_argument("--no-tui", action="store_true",
                         help="Use plain CLI mode instead of TUI")
+    parser.add_argument("--web", action="store_true",
+                        help="Enable web dashboard alongside TUI")
+    parser.add_argument("--web-only", action="store_true",
+                        help="Web dashboard only, no TUI")
+    parser.add_argument("--web-port", type=int, default=8000,
+                        help="Web dashboard port (default 8000)")
     args = parser.parse_args()
 
     # Validate --node argument
@@ -59,10 +65,25 @@ def main():
     is_oneshot = args.scan or args.stop or args.ramp or args.status or args.read \
         or args.monitor or args.duty is not None
 
+    # Web-only mode: no TUI, just web dashboard + BLE
+    if args.web_only:
+        _run_web_only(args, node)
+        return
+
     # If TUI available and not one-shot and not --no-tui, launch TUI
     # Textual's app.run() manages its own event loop, so call it directly (not from asyncio.run)
     if _HAS_TEXTUAL and not is_oneshot and not args.no_tui:
         gateway = DCMonitorGateway()
+
+        # Initialize web dashboard if --web flag is set
+        if args.web:
+            import db
+            import web_server
+            db.init_db()
+            web_server.set_gateway(gateway)
+            gateway._web_enabled = True
+            gateway._web_port = args.web_port
+
         app = MeshGatewayApp(
             gateway,
             target_address=args.address,
@@ -137,6 +158,71 @@ async def _run_cli(args, node: str):
         await gateway.interactive_mode(default_node=node)
 
     await gateway.disconnect()
+
+
+def _run_web_only(args, node: str):
+    """Run gateway with web dashboard only (no TUI)."""
+    import db
+    import web_server
+    import uvicorn
+    from ble_thread import BleThread
+
+    gateway = DCMonitorGateway()
+    gateway._web_enabled = True
+
+    bt = BleThread()
+    bt.start()
+    gateway.ble_thread = bt
+
+    db.init_db()
+    web_server.set_gateway(gateway)
+
+    async def startup_and_serve():
+        # Scan and connect
+        devices = await gateway.scan_for_nodes(
+            timeout=args.timeout, target_address=args.address)
+        if devices:
+            if args.address:
+                device = next(
+                    (d for d in devices if d.address.upper() == args.address.upper()),
+                    devices[0])
+            else:
+                device = devices[0]
+
+            # Try each device until one connects
+            for dev in ([device] + [d for d in devices if d != device]):
+                if await gateway.connect_to_node(dev):
+                    gateway.sensing_node_count = len(devices)
+                    print(f"  Connected to {dev.name or dev.address} "
+                          f"({len(devices)} node(s))")
+                    asyncio.ensure_future(gateway._auto_reconnect_loop())
+                    break
+        else:
+            print("  No gateways found. Web server starting anyway...")
+
+        # Start uvicorn
+        config = uvicorn.Config(
+            web_server.app, host="0.0.0.0", port=args.web_port,
+            log_level="info")
+        server = uvicorn.Server(config)
+        await server.serve()
+
+    print("\n" + "=" * 50)
+    print("  DC Monitor Mesh Gateway — Web Only Mode")
+    print("=" * 50)
+    print(f"  Dashboard: http://0.0.0.0:{args.web_port}")
+    print(f"  API:       http://0.0.0.0:{args.web_port}/api/state")
+    print(f"  WebSocket: ws://0.0.0.0:{args.web_port}/ws")
+    print()
+
+    future = bt.submit(startup_and_serve())
+    try:
+        future.result()
+    except KeyboardInterrupt:
+        print("\nShutting down...")
+    finally:
+        gateway.running = False
+        bt.stop()
 
 
 if __name__ == "__main__":

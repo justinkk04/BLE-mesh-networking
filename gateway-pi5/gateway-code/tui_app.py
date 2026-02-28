@@ -108,6 +108,23 @@ class MeshGatewayApp(App):
         self.query_one("#cmd-input", Input).focus()
         # Start BLE I/O thread before any BLE operations
         self._ble_thread.start()
+
+        # Start web server on BLE thread if --web flag was set
+        if getattr(self.gateway, '_web_enabled', False):
+            try:
+                import uvicorn
+                import web_server
+                config = uvicorn.Config(
+                    web_server.app, host="0.0.0.0",
+                    port=self.gateway._web_port, log_level="info")
+                server = uvicorn.Server(config)
+                self._ble_thread.submit(server.serve())
+                self.log_message(
+                    f"Web dashboard: http://0.0.0.0:{self.gateway._web_port}",
+                    style="bold green")
+            except Exception as e:
+                self.log_message(f"Web server failed: {e}", style="bold red")
+
         # Start BLE connection
         self.connect_ble()
 

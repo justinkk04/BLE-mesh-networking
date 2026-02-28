@@ -1,4 +1,8 @@
 # BLE Gateway Dependencies
 bleak>=0.21.0
-pip install flask
-pip inatll tui /* For the TUI, you can use a library like 'textual' or 'rich' to create a terminal-based user interface. */
+textual>=0.40.0
+
+# Web Dashboard (v0.7.1)
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+websockets>=12.0

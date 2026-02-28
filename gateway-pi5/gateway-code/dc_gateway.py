@@ -50,6 +50,8 @@ class DCMonitorGateway:
         self._was_connected = False
         self._reconnecting = False
         self._last_connected_address = None
+        self._web_enabled = False  # Set True by gateway.py when --web is used
+        self._last_readings = {}  # {node_id: {duty, voltage, current, power, last_seen}}
 
     def log(self, text: str, style: str = "", _from_thread: bool = False,
             _debug: bool = False):
@@ -78,6 +80,17 @@ class DCMonitorGateway:
                 print(f"  {text}  [log error: {e}]")
         else:
             print(f"  {text}")
+
+        # Web console streaming (skip debug messages to reduce noise)
+        if self._web_enabled and not _debug:
+            try:
+                import web_server
+                loop = self.ble_thread._loop if self.ble_thread else None
+                if loop:
+                    asyncio.run_coroutine_threadsafe(
+                        web_server.broadcast_log(text), loop)
+            except Exception:
+                pass
 
     async def scan_for_nodes(self, timeout=10.0, target_address=None):
         """Scan for DC Monitor gateway nodes.
@@ -158,6 +171,13 @@ class DCMonitorGateway:
                 # Track this node as known (it actually exists and responded)
                 self.known_nodes.add(node_id)
 
+                # Store latest reading for web API (independent of PM)
+                self._last_readings[node_id] = {
+                    "duty": duty, "voltage": voltage,
+                    "current": current, "power": power,
+                    "last_seen": time.monotonic(),
+                }
+
                 # Feed PowerManager
                 if self._power_manager:
                     self._power_manager.on_sensor_data(
@@ -167,6 +187,24 @@ class DCMonitorGateway:
                 evt = self._node_events.get(node_id)
                 if evt:
                     evt.set()
+
+                # Web dashboard: broadcast sensor data + record to DB
+                if self._web_enabled:
+                    try:
+                        import web_server
+                        import db
+                        loop = self.ble_thread._loop if self.ble_thread else None
+                        if loop:
+                            asyncio.run_coroutine_threadsafe(
+                                web_server.broadcast_sensor_data(node_id, {
+                                    "duty": duty, "voltage": voltage,
+                                    "current": current, "power": power,
+                                }),
+                                loop
+                            )
+                        db.insert_reading(node_id, duty, voltage, current, power)
+                    except Exception:
+                        pass
 
                 # Post to TUI for UI update (always use call_from_thread — we're on bleak's thread)
                 if self.app and _HAS_TEXTUAL:
@@ -247,6 +285,23 @@ class DCMonitorGateway:
 
         self._was_connected = True
         self._last_connected_address = device.address
+
+        # Web broadcast: connection established
+        if self._web_enabled:
+            try:
+                import web_server
+                loop = self.ble_thread._loop if self.ble_thread else None
+                if loop:
+                    asyncio.run_coroutine_threadsafe(
+                        web_server.broadcast_state_change("connected", {
+                            "device_name": getattr(device, 'name', None),
+                            "device_address": device.address,
+                        }),
+                        loop
+                    )
+            except Exception:
+                pass
+
         return True
 
     async def disconnect(self):
@@ -259,6 +314,19 @@ class DCMonitorGateway:
                 pass
             self.log("Disconnected")
         self._chunk_buf = ""  # Clear stale partial data on disconnect
+
+        # Web broadcast: disconnected
+        if self._web_enabled:
+            try:
+                import web_server
+                loop = self.ble_thread._loop if self.ble_thread else None
+                if loop:
+                    asyncio.run_coroutine_threadsafe(
+                        web_server.broadcast_state_change("disconnected"),
+                        loop
+                    )
+            except Exception:
+                pass
 
     async def send_command(self, cmd: str, _silent: bool = False):
         """Send raw command string to GATT gateway"""
@@ -386,6 +454,19 @@ class DCMonitorGateway:
                              style="bold red", _from_thread=True)
                     self._was_connected = False
                     self._reconnecting = True
+
+                    # Web broadcast: connection lost, attempting reconnect
+                    if self._web_enabled:
+                        try:
+                            import web_server
+                            loop = self.ble_thread._loop if self.ble_thread else None
+                            if loop:
+                                asyncio.run_coroutine_threadsafe(
+                                    web_server.broadcast_state_change("reconnecting"),
+                                    loop
+                                )
+                        except Exception:
+                            pass
 
                     # Pause PM if active
                     pm = self._power_manager

@@ -522,6 +522,23 @@ class PowerManager:
                 f"[POWER] Balancing {total_power:.0f}/{budget:.0f}mW "
                 f"(share:{share_mw:.0f}mW each) — {', '.join(changes)}")
 
+        # Web broadcast: PM state update
+        if getattr(self.gateway, '_web_enabled', False):
+            try:
+                import web_server
+                loop = self.gateway.ble_thread._loop if self.gateway.ble_thread else None
+                if loop:
+                    asyncio.run_coroutine_threadsafe(
+                        web_server.broadcast_state_change("pm_update", {
+                            "total_power": total_power,
+                            "budget": budget,
+                            "changes": changes,
+                        }),
+                        loop
+                    )
+            except Exception:
+                pass
+
     async def _balance_with_priority(self, nodes: dict, budget: float):
         """Weighted power shares: priority node gets PRIORITY_WEIGHT x normal share."""
         priority_ns = nodes[self.priority_node]
@@ -564,3 +581,20 @@ class PowerManager:
                 f"[POWER] Balancing {total_power:.0f}/{budget:.0f}mW "
                 f"(pri:{priority_budget:.0f}mW, others:{non_pri_share:.0f}mW each) "
                 f"— {', '.join(changes)}")
+
+        # Web broadcast: PM state update
+        if getattr(self.gateway, '_web_enabled', False):
+            try:
+                import web_server
+                loop = self.gateway.ble_thread._loop if self.gateway.ble_thread else None
+                if loop:
+                    asyncio.run_coroutine_threadsafe(
+                        web_server.broadcast_state_change("pm_update", {
+                            "total_power": total_power,
+                            "budget": budget,
+                            "changes": changes,
+                        }),
+                        loop
+                    )
+            except Exception:
+                pass
