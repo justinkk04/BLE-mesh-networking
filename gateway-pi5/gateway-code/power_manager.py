@@ -495,14 +495,14 @@ class PowerManager:
         change = f"N{nid}:{current}->{new_duty}%"
         await self.gateway.set_duty(nid, new_duty, _from_power_mgr=True, _silent=True)
         confirmed = await self.gateway._wait_node_response(nid)
-        if confirmed:
-            ns.commanded_duty = new_duty
-        else:
+        # Always update commanded_duty — with mesh latency, strict confirmation
+        # often fails (response shows old duty). The next poll will self-correct
+        # if the command was truly lost.
+        ns.commanded_duty = new_duty
+        if not confirmed:
             self.gateway.log(
-                f"[PM] N{nid} did not confirm duty:{new_duty}%, "
-                f"keeping cmd={current}%", _debug=True)
-            # Don't update commanded_duty — node may not have received it.
-            # Next poll cycle will re-evaluate with accurate data.
+                f"[PM] N{nid} duty:{new_duty}% sent (no confirm, will verify next poll)",
+                _debug=True)
         return change
 
     async def _balance_proportional(self, nodes: dict, budget: float):

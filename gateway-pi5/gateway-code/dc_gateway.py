@@ -400,39 +400,63 @@ class DCMonitorGateway:
                 if not self._reconnecting:
                     continue
 
-                # Attempt reconnect
+                # Attempt failover: scan for ALL available nodes, try each
                 try:
-                    devices = await self.scan_for_nodes(
-                        timeout=5.0,
-                        target_address=self._last_connected_address
-                    )
-                    if not devices:
-                        # Try scanning without target address (any gateway)
-                        devices = await self.scan_for_nodes(timeout=5.0)
+                    dead_address = self._last_connected_address
+                    devices = await self.scan_for_nodes(timeout=5.0)
 
                     if devices:
-                        success = await self.connect_to_node(devices[0])
-                        if success:
-                            self.log("[RECONNECT] Reconnected successfully!",
-                                     style="bold green", _from_thread=True)
-                            self._was_connected = True
-                            self._reconnecting = False
-                            self._last_connected_address = devices[0].address
+                        # Try each device (skip the dead one first pass)
+                        connected = False
+                        for device in devices:
+                            if device.address == dead_address:
+                                continue  # Skip the node that just died
+                            success = await self.connect_to_node(device)
+                            if success:
+                                self.log(
+                                    f"[FAILOVER] Connected to {device.name or device.address}",
+                                    style="bold green", _from_thread=True)
+                                self._was_connected = True
+                                self._reconnecting = False
+                                self._last_connected_address = device.address
 
-                            # Resume PM
-                            pm = self._power_manager
-                            if pm and pm._paused:
-                                pm._paused = False
-                                self.log("[RECONNECT] PowerManager resumed",
-                                         _from_thread=True)
-                        else:
-                            self.log("[RECONNECT] Connect failed, retrying in 5s...",
+                                # Resume PM
+                                pm = self._power_manager
+                                if pm and pm._paused:
+                                    pm._paused = False
+                                    self.log("[FAILOVER] PowerManager resumed",
+                                             _from_thread=True)
+                                connected = True
+                                break
+
+                        # If all others failed, try the original address too
+                        if not connected and dead_address:
+                            for device in devices:
+                                if device.address == dead_address:
+                                    success = await self.connect_to_node(device)
+                                    if success:
+                                        self.log(
+                                            "[RECONNECT] Reconnected to original node",
+                                            style="bold green", _from_thread=True)
+                                        self._was_connected = True
+                                        self._reconnecting = False
+
+                                        pm = self._power_manager
+                                        if pm and pm._paused:
+                                            pm._paused = False
+                                            self.log("[RECONNECT] PowerManager resumed",
+                                                     _from_thread=True)
+                                        connected = True
+                                        break
+
+                        if not connected:
+                            self.log("[FAILOVER] No node available, retrying in 5s...",
                                      _from_thread=True)
                     else:
-                        self.log("[RECONNECT] No gateway found, retrying in 5s...",
+                        self.log("[FAILOVER] No nodes found, retrying in 5s...",
                                  _from_thread=True)
                 except Exception as e:
-                    self.log(f"[RECONNECT] Error: {e}, retrying in 5s...",
+                    self.log(f"[FAILOVER] Error: {e}, retrying in 5s...",
                              _from_thread=True)
 
     # ---- Legacy plain CLI interactive mode (--no-tui) ----

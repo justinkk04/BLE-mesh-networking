@@ -148,9 +148,9 @@ class MeshGatewayApp(App):
                 break
 
         if connected_device:
-            # Derive sensing node count from the BLE scan:
-            # total mesh devices found - 1 (the GATT gateway we just connected to)
-            gw.sensing_node_count = max(0, len(devices) - 1)
+            # With universal nodes, every node is a sensor (including the connected one).
+            # The connected node reports its own data via GATT self-addressing.
+            gw.sensing_node_count = len(devices)
             self.log_message(
                 f"Connected to {connected_device.name or connected_device.address} "
                 f"({gw.sensing_node_count} sensing node(s) in mesh)",

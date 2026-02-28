@@ -411,6 +411,16 @@ static void custom_model_cb(esp_ble_mesh_model_cb_event_t event,
   case ESP_BLE_MESH_MODEL_OPERATION_EVT:
     if (param->model_operation.opcode == VND_OP_SEND) {
       // ---- SERVER role: received a command, process locally ----
+      uint16_t src_addr = param->model_operation.ctx->addr;
+
+      // Skip self-echoed group messages: when WE send ALL: via group,
+      // mesh delivers it back to us. command_parser.c already processed
+      // the local part, so don't duplicate.
+      if (src_addr == node_state.addr) {
+        ESP_LOGD(TAG, "Skipping self-echo from 0x%04x", src_addr);
+        break;
+      }
+
       char cmd[64];
       uint16_t len = param->model_operation.length;
       if (len >= sizeof(cmd))
@@ -419,7 +429,7 @@ static void custom_model_cb(esp_ble_mesh_model_cb_event_t event,
       cmd[len] = '\0';
 
       ESP_LOGI(TAG, "Vendor SEND from 0x%04x: %s",
-               param->model_operation.ctx->addr, cmd);
+               src_addr, cmd);
 
       char response[128];
       int resp_len = process_command(cmd, response, sizeof(response));
