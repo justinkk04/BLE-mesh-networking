@@ -175,7 +175,7 @@ class DCMonitorGateway:
                 self._last_readings[node_id] = {
                     "duty": duty, "voltage": voltage,
                     "current": current, "power": power,
-                    "last_seen": time.monotonic(),
+                    "last_seen": time.time(),
                 }
 
                 # Feed PowerManager
@@ -199,6 +199,7 @@ class DCMonitorGateway:
                                 web_server.broadcast_sensor_data(node_id, {
                                     "duty": duty, "voltage": voltage,
                                     "current": current, "power": power,
+                                    "last_seen": time.time(),
                                 }),
                                 loop
                             )

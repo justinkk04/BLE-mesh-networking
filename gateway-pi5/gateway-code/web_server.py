@@ -95,6 +95,9 @@ for _subdir in ["css", "js"]:
         app.mount(f"/{_subdir}", StaticFiles(directory=str(_dir)), name=_subdir)
 
 
+
+
+
 # --- WebSocket Endpoint ---
 
 @app.websocket("/ws")
@@ -120,10 +123,59 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 async def _execute_command(cmd: str):
-    """Execute a gateway command via the normal BLE path."""
+    """Parse and dispatch a user-friendly command (mirrors TUI dispatch logic)."""
     if not _gateway:
+        await broadcast_log("[ERROR] Gateway not initialized")
         return
-    await _gateway.send_command(cmd)
+
+    cmd = cmd.strip()
+    if not cmd:
+        return
+
+    parts = cmd.lower().split()
+    verb = parts[0]
+
+    try:
+        # "node <id> <subcmd> [value]" — e.g. "node 0 r", "node 1 duty 50"
+        if verb == 'node' and len(parts) >= 3:
+            node_id = parts[1]
+            subcmd = parts[2]
+            if subcmd in ('r', 'read'):
+                await _gateway.read_sensor(node_id)
+            elif subcmd in ('s', 'stop'):
+                await _gateway.stop_node(node_id)
+            elif subcmd in ('ramp',):
+                await _gateway.start_ramp(node_id)
+            elif subcmd == 'duty' and len(parts) >= 4:
+                await _gateway.set_duty(node_id, int(parts[3]))
+            else:
+                await broadcast_log(f"Unknown sub-command: {subcmd}")
+        # Change target node: "node <id>"
+        elif verb == 'node' and len(parts) == 2:
+            _gateway.target_node = parts[1].upper() if parts[1].upper() == 'ALL' else parts[1]
+            await broadcast_log(f"Target node set to: {_gateway.target_node}")
+        # Short-hand commands using current target node
+        elif verb in ('r', 'read'):
+            await _gateway.read_sensor(_gateway.target_node)
+        elif verb in ('s', 'stop'):
+            await _gateway.stop_node(_gateway.target_node)
+        elif verb in ('ramp',):
+            await _gateway.start_ramp(_gateway.target_node)
+        elif verb == 'duty' and len(parts) >= 2:
+            await _gateway.set_duty(_gateway.target_node, int(parts[1]))
+        elif verb.isdigit():
+            # Bare number = set duty on target node
+            await _gateway.set_duty(_gateway.target_node, int(verb))
+        elif verb == 'help':
+            await broadcast_log(
+                "Commands: read | r, stop | s, ramp, duty <0-100>, "
+                "node <id> <r|s|ramp|duty> [val]"
+            )
+        else:
+            # Fall through: try sending raw to BLE  
+            await _gateway.send_command(cmd)
+    except Exception as e:
+        await broadcast_log(f"[ERROR] {e}")
 
 
 # --- REST API ---
@@ -181,7 +233,7 @@ def _build_state() -> dict:
             "current": r["current"],
             "power": r["power"],
             "last_seen": r["last_seen"],
-            "responsive": time.monotonic() - r["last_seen"] < 30,
+            "responsive": time.time() - r["last_seen"] < 30,
             "commanded_duty": 0,
             "target_duty": 0,
         }

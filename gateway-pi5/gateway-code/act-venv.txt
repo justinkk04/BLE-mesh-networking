@@ -19,3 +19,6 @@ address of new gattgateway
     10:51:DB:01:E8:A6
 
 python gateway.py --address  10:51:DB:01:E8:A6
+
+http://localhost:8000/api/state
+http://localhost:8000/api/history?minutes=5
