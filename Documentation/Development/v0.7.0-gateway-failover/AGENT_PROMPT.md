@@ -1,7 +1,7 @@
-# v0.7.0 Gateway Failover — Agent Prompt
+# v0.7.0 Gateway Failover — Agent Prompts
 
-> **Instructions:** Copy this entire prompt and pass it to a coding agent to implement Phase 1 (auto-reconnect) of the Gateway Failover feature.
-> After Phase 1 is verified working, use the Phase 2 prompt below for firmware consolidation.
+> **Instructions:** Use these prompts one at a time, in order.
+> Each phase is independently testable — verify it passes before moving to the next.
 
 ---
 
@@ -15,8 +15,8 @@ REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-
 **Goal:** Make the gateway automatically detect BLE disconnection and reconnect without requiring a manual restart.
 
 **Context:** Read these files first:
-- `Documentation/v0.7.0-gateway-failover/GATEWAY_FAILOVER_PLAN.md` — high-level design
-- `Documentation/v0.7.0-gateway-failover/GATEWAY_FAILOVER_IMPLEMENTATION.md` — Section 2 (Phase 1 details)
+- `Documentation/Development/v0.7.0-gateway-failover/GATEWAY_FAILOVER_PLAN.md` — high-level design (Phase 1 section)
+- `Documentation/Development/v0.7.0-gateway-failover/GATEWAY_FAILOVER_IMPLEMENTATION.md` — Section 2 (Phase 1 details)
 - `MESH_IMPLEMENTATION.md` — system architecture reference
 
 Then read the MODULAR Python gateway code:
@@ -183,7 +183,7 @@ python gateway.py
 
 ---
 
-## Phase 2 Prompt (ESP Firmware + Python — Use After Phase 1 Is Verified)
+## Phase 2 Prompt (ESP Firmware Only — No Python Changes)
 
 ```
 
@@ -191,20 +191,19 @@ You are implementing Phase 2 of the BLE Mesh Gateway Failover feature (v0.7.0).
 
 REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Consolidate the GATT Gateway and Sensor Node into a single "Universal Node" firmware, so any sensor node can act as the Pi 5's gateway. This eliminates the dedicated GATT Gateway as a single point of failure.
+**Goal:** Port the GATT Gateway's capabilities into the Sensor Node firmware, creating a "Universal Node" that can both sense AND act as a GATT gateway. This phase is ESP C code ONLY — do not change any Python files.
 
 **Context:** Read these files FIRST:
 
-- `Documentation/v0.7.0-gateway-failover/GATEWAY_FAILOVER_PLAN.md` — high-level design
-- `Documentation/v0.7.0-gateway-failover/GATEWAY_FAILOVER_IMPLEMENTATION.md` — Section 3-6 (Phase 2 details)
-- `Documentation/v0.6.2-classes-cleanup/CHANGELOG.md` — modular structure reference
+- `Documentation/Development/v0.7.0-gateway-failover/GATEWAY_FAILOVER_PLAN.md` — Phase 2 section
+- `Documentation/Development/v0.7.0-gateway-failover/GATEWAY_FAILOVER_IMPLEMENTATION.md` — Sections 3-4 (Phase 2 firmware details)
 - `MESH_IMPLEMENTATION.md` — full architecture reference
 
 Then read the MODULAR ESP firmware:
 
 ### GATT Gateway (porting FROM — reference only)
 
-- `ESP/ESP_GATT_BLE_Gateway/main/gatt_service.c/h` — GATT service definition, callbacks, advertising, chunked notify
+- `ESP/ESP_GATT_BLE_Gateway/main/gatt_service.c/h` — GATT service, callbacks, advertising, chunked notify
 - `ESP/ESP_GATT_BLE_Gateway/main/mesh_gateway.c/h` — Vendor CLIENT model, send_vendor_command
 - `ESP/ESP_GATT_BLE_Gateway/main/command_parser.c/h` — Pi 5 command parsing
 - `ESP/ESP_GATT_BLE_Gateway/main/monitor.c/h` — Continuous monitoring task
@@ -219,32 +218,16 @@ Then read the MODULAR ESP firmware:
 - `ESP/ESP-Mesh-Node-sensor-test/main/command.c/h` — Command processing
 - `ESP/ESP-Mesh-Node-sensor-test/main/CMakeLists.txt` — MUST UPDATE with new files
 
-### Pi 5 Gateway (modular Python)
-
-- `gateway-pi5/gateway-code/dc_gateway.py` — Add failover logic
-- `gateway-pi5/gateway-code/constants.py` — Add "DC-Monitor" to name prefixes
-
 ---
 
 ### CRITICAL: Modular Code Structure (v0.6.2)
 
-> The codebase was refactored into single-responsibility modules in v0.6.2.
->
 > **ESP rules:**
 >
 > - `main.c` is a THIN ORCHESTRATOR (~50-90 lines). Only add init function calls to it.
 > - Create NEW `.c`/`.h` module pairs for new functionality (e.g. `gatt_service.c/h`)
 > - Update `CMakeLists.txt` SRCS list for every new `.c` file
 > - Add vendor CLIENT model definitions to `mesh_node.c/h` (same file as SERVER model)
->
-> **Python rules:**
->
-> - Each class lives in its own module. Changes go to the CORRECT module file.
-> - `dc_gateway.py` = DCMonitorGateway, `constants.py` = shared constants, etc.
-
-**Architecture:** Currently, sensor nodes have Vendor SERVER model (receives commands, responds with sensor data) and the dedicated GATT gateway has Vendor CLIENT model (sends commands to nodes) + GATT service (Pi 5 connects here). You are merging both roles into one firmware.
-
-**Tech Stack:** ESP-IDF 5.x (C), BLE Mesh, NimBLE GATT, Python 3 + bleak
 
 **CRITICAL INIT ORDER:** GATT services MUST be registered BEFORE `esp_ble_mesh_init()` — mesh init locks the GATT table. This is already proven working in the GATT gateway code.
 
@@ -253,12 +236,87 @@ Then read the MODULAR ESP firmware:
 1. The consolidated node has BOTH VND_MODEL_ID_SERVER and VND_MODEL_ID_CLIENT
 2. When Pi 5 connects via GATT, the node acts as gateway (forwards commands to mesh)
 3. When a GATT command targets the node itself, it processes locally (no mesh roundtrip)
-4. GATT advertising name: "DC-Monitor" (update constants.py scan matching)
+4. GATT advertising name: "DC-Monitor"
 5. ESP_GATT_BLE_Gateway directory is DEPRECATED but kept for rollback
 6. New functionality goes into NEW MODULE FILES, not into main.c
 
-**IMPORTANT:** This requires erasing flash on ALL ESP devices and reprovisioning from scratch.
+**How to verify Phase 2:**
 
-Refer to Section 3 of GATEWAY_FAILOVER_IMPLEMENTATION.md for exact code changes per subsection.
+1. `idf.py build` — must compile with no errors
+2. Erase + flash provisioner, then erase + flash one universal node
+3. Provisioner serial output shows BOTH vendor models bound
+4. Connect from Pi 5 with `gateway.py --address <MAC>` — the GATT service should be discoverable
+5. `0:READ` returns real sensor data (self-addressed, local processing)
+
+Refer to Sections 3-4 of GATEWAY_FAILOVER_IMPLEMENTATION.md for exact code changes per subsection.
+
+```
+
+---
+
+## Phase 3 Prompt (Python Failover — After Phase 2 Firmware Is Verified)
+
+```
+
+You are implementing Phase 3 of the BLE Mesh Gateway Failover feature (v0.7.0).
+
+REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** Update the Python gateway so it can discover universal nodes by their new name ("DC-Monitor"), and fail over to a different node when the connected one dies.
+
+**Pre-requisite:** Phase 1 (auto-reconnect) and Phase 2 (universal node firmware) are both complete and verified.
+
+**Context:** Read these files first:
+
+- `Documentation/Development/v0.7.0-gateway-failover/GATEWAY_FAILOVER_PLAN.md` — Phase 3 section
+- `Documentation/Development/v0.7.0-gateway-failover/GATEWAY_FAILOVER_IMPLEMENTATION.md` — Section 5 (Phase 2 Python changes)
+- `gateway-pi5/gateway-code/dc_gateway.py` — already has Phase 1 reconnect loop
+- `gateway-pi5/gateway-code/constants.py` — scan matching constants
+
+---
+
+### Task 1: Update scan matching in `constants.py`
+
+**File:** `gateway-pi5/gateway-code/constants.py`
+
+Add `"DC-Monitor"` to `DEVICE_NAME_PREFIXES`:
+
+```python
+DEVICE_NAME_PREFIXES = ["Mesh-Gateway", "DC-Monitor", "ESP-BLE-MESH"]
+```
+
+---
+
+### Task 2: Add failover logic to `_auto_reconnect_loop()` in `dc_gateway.py`
+
+**File:** `gateway-pi5/gateway-code/dc_gateway.py`
+
+Extend the reconnect loop (from Phase 1) so that on disconnect it tries ALL available nodes, not just the previously connected one:
+
+```python
+devices = await self.scan_for_nodes(timeout=5.0)
+if devices:
+    for device in devices:
+        success = await self.connect_to_node(device)
+        if success:
+            self.log(f"[FAILOVER] Connected to {device.name or device.address}")
+            break
+```
+
+---
+
+### Task 3: Adjust sensing_node_count
+
+When the connected node is itself a sensor (universal node), it's counted in the mesh scan. Adjust `sensing_node_count` since the connected node reports data directly through GATT, not via mesh relay.
+
+---
+
+### How to verify Phase 3
+
+1. At least 2 universal nodes provisioned and running
+2. `gateway.py` discovers nodes by "DC-Monitor" name
+3. `ALL:READ` returns data from all nodes
+4. Power-cycle the connected node → Pi 5 connects to a DIFFERENT node
+5. Commands continue to work through the new node
 
 ```
