@@ -69,7 +69,11 @@ function handleMessage(msg) {
         handleState(msg.data);
     } else if (msg.type === 'sensor_data') {
         nodes.updateNode(msg.node_id, msg.data);
-        charts.addPoint(msg.node_id, msg.timestamp, msg.data.power);
+        charts.addPoint(msg.node_id, msg.timestamp, {
+            power: msg.data.power,
+            voltage: msg.data.voltage,
+            current: msg.data.current,
+        });
         const allNodes = nodes.getAllNodes();
         topology.updateGraph(allNodes);
     } else if (msg.type === 'log') {
@@ -77,6 +81,8 @@ function handleMessage(msg) {
     } else if (msg.type === 'event') {
         if (msg.event === 'pm_update') {
             updatePowerManager(msg.data);
+        } else if (msg.event === 'poll_update') {
+            updatePollStatus(msg.data);
         } else if (['connected', 'disconnected', 'reconnecting'].includes(msg.event)) {
             fetchInitialState(); // Refresh full state on connection events
         }
@@ -112,6 +118,11 @@ function handleState(state) {
     // Power Manager
     if (state.power_manager) {
         updatePowerManager(state.power_manager);
+    }
+
+    // Poll state
+    if (state.poll) {
+        updatePollStatus(state.poll);
     }
 
     // Header count
@@ -152,6 +163,44 @@ function updateConnectionBadge(status, text = null) {
     badge.className = `badge ${status}`;
     if (text) badge.textContent = text;
 }
+
+function updatePollStatus(poll) {
+    const btn = document.getElementById('poll-toggle');
+    const input = document.getElementById('poll-interval');
+    if (!btn) return;
+
+    const isActive = poll.active || poll.requested;
+    btn.textContent = isActive ? 'Stop' : 'Start';
+    btn.className = isActive ? 'poll-btn active' : 'poll-btn';
+    if (input && poll.interval !== undefined) {
+        input.value = poll.interval;
+    }
+}
+
+// Wire poll controls on DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+    const pollBtn = document.getElementById('poll-toggle');
+    const pollInput = document.getElementById('poll-interval');
+    if (pollBtn) {
+        pollBtn.addEventListener('click', () => {
+            const isActive = pollBtn.classList.contains('active');
+            if (isActive) {
+                sendCommand('poll stop');
+            } else {
+                const interval = parseFloat(pollInput?.value) || 2.0;
+                sendCommand(`poll ${interval}`);
+            }
+        });
+    }
+    if (pollInput) {
+        pollInput.addEventListener('change', () => {
+            if (document.getElementById('poll-toggle')?.classList.contains('active')) {
+                const interval = parseFloat(pollInput.value) || 2.0;
+                sendCommand(`poll ${interval}`);
+            }
+        });
+    }
+});
 
 export function sendCommand(cmdStr) {
     if (!ws || ws.readyState !== WebSocket.OPEN) {

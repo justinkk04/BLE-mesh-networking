@@ -182,33 +182,47 @@ All development and testing is done on **Windows** with real ESP32-C6 nodes conn
 
 ---
 
-### Phase 3: Polish — Resilience, History Charts, Settings
+### Phase 3: Polish — Auto-Polling, Multi-Metric Charts, Settings
 
-**Scope:** Edge cases, data retention, and user settings. Makes the dashboard production-ready.
+**Scope:** Make the dashboard self-sufficient (no manual `read` commands needed), add voltage/current charts, expose PM settings via the web UI, and handle all edge cases.
 
-**What changes:**
+**Already completed during Phase 2 (no additional work needed):**
+
+- ✅ WebSocket auto-reconnect with exponential backoff (`app.js`)
+- ✅ Stale/offline visual states — fade after 10s, red after 30s (`nodes.js`)
+- ✅ Configurable time windows — 5m, 30m, 1h, 24h buttons (`charts.js`)
+- ✅ Data retention — 7-day auto-purge (`db.py`)
+
+**What still needs to change:**
 
 | File | Change |
 |------|--------|
-| `gateway-pi5/dashboard/js/app.js` | WebSocket auto-reconnect with exponential backoff |
-| `gateway-pi5/dashboard/js/nodes.js` | Stale/offline visual states (fade nodes after 10s, red after 30s) |
-| `gateway-pi5/dashboard/js/charts.js` | Configurable time window (5m, 30m, 1h, 24h), per-node charts |
-| `gateway-pi5/dashboard/css/style.css` | Responsive breakpoints (mobile, tablet, desktop) |
-| `gateway-pi5/gateway-code/db.py` | Data retention policy (auto-purge readings older than 7 days) |
-| `gateway-pi5/gateway-code/web_server.py` | Settings API (threshold, budget, priority, poll interval) |
+| `gateway-pi5/gateway-code/dc_gateway.py` | **[NEW]** `start_web_poll(interval)` / `stop_web_poll()` coroutine — sends `ALL:READ` at configurable interval, suppresses TUI log spam via `_silent=True` |
+| `gateway-pi5/gateway-code/web_server.py` | **[NEW]** Poll command handler (`poll 1.0`, `poll stop`) + Settings REST API (`/api/settings`) for threshold, budget, priority, poll interval |
+| `gateway-pi5/dashboard/js/nodes.js` | **[MOD]** Add poll rate controls (start/stop button + interval input) to dashboard header or settings panel |
+| `gateway-pi5/dashboard/js/charts.js` | **[MOD]** Add voltage and current datasets alongside power — switchable via tabs or stacked charts |
+| `gateway-pi5/dashboard/css/style.css` | **[MOD]** Responsive breakpoints (mobile, tablet, desktop) |
 
 **Risk:** 🟢 Low — incremental improvements on a working system
-**Effort:** ~200 lines
+**Effort:** ~300 lines
+
+**Key design decisions:**
+
+- **PM-aware polling:** When PowerManager is active, it already polls all nodes via `poll_loop()`. The web auto-poll should auto-disable when PM starts and re-enable when PM stops — no double-polling.
+- **Silent BLE reads:** Web-triggered `ALL:READ` commands use `_silent=True` so they don't flood the TUI log. Data still flows to WebSocket and DB.
+- **Chart metrics:** Power is the primary chart; voltage and current are secondary tabs or a dropdown selector. All three are stored in the DB already.
 
 #### How to Test Phase 3
 
-1. Kill the gateway → browser shows "Disconnected" overlay → restart → auto-reconnects
-2. Power-cycle a node → its card fades to "stale" → "offline" → glows green when it recovers
-3. Switch history chart to 1h window → verify data loads from SQLite
-4. On Pi 5 deployment: open on phone (WireGuard) → verify responsive layout
-5. Check `mesh_data.db` size after 7+ days → old records purged
+1. Open dashboard → click "Start Polling" at 2s interval → nodes stay green without typing `read`
+2. Enable PM → verify web poll auto-stops (PM takes over data flow)
+3. Disable PM → verify web poll auto-restarts
+4. Switch chart to "Voltage" tab → verify line chart shows V over time
+5. Kill the gateway → browser shows "Disconnected" overlay → restart → auto-reconnects
+6. Power-cycle a node → its card fades to "stale" → "offline" → glows green when it recovers
+7. On Pi 5 deployment: open on phone (WireGuard) → verify responsive layout
 
-**Phase 3 is DONE when:** Dashboard handles all edge cases gracefully and has production-grade resilience.
+**Phase 3 is DONE when:** Dashboard auto-polls without manual intervention, shows all three metrics (power/voltage/current), handles PM transitions gracefully, and has production-grade resilience.
 
 ---
 

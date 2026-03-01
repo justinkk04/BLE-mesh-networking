@@ -83,6 +83,9 @@ def main():
             web_server.set_gateway(gateway)
             gateway._web_enabled = True
             gateway._web_port = args.web_port
+            # Auto-start poll at 2s when web dashboard is active
+            gateway._web_poll_requested = True
+            gateway._web_poll_interval = 2.0
 
         app = MeshGatewayApp(
             gateway,
@@ -169,6 +172,9 @@ def _run_web_only(args, node: str):
 
     gateway = DCMonitorGateway()
     gateway._web_enabled = True
+    # Auto-start poll at 2s when web dashboard is active
+    gateway._web_poll_requested = True
+    gateway._web_poll_interval = 2.0
 
     bt = BleThread()
     bt.start()

@@ -52,6 +52,10 @@ class DCMonitorGateway:
         self._last_connected_address = None
         self._web_enabled = False  # Set True by gateway.py when --web is used
         self._last_readings = {}  # {node_id: {duty, voltage, current, power, last_seen}}
+        # Web auto-poll state (v0.7.1 Phase 3)
+        self._web_poll_task = None
+        self._web_poll_interval = 2.0  # seconds (adjustable 0.5–30)
+        self._web_poll_requested = False
 
     def log(self, text: str, style: str = "", _from_thread: bool = False,
             _debug: bool = False):
@@ -208,6 +212,9 @@ class DCMonitorGateway:
                         pass
 
                 # Post to TUI for UI update (always use call_from_thread — we're on bleak's thread)
+                # Suppress log spam when web poll or PM poll is running (same as PM error suppression)
+                is_bg_poll = (getattr(self, '_web_poll_active', False)
+                              or (self._power_manager and self._power_manager._polling))
                 if self.app and _HAS_TEXTUAL:
                     try:
                         msg = self.app.SensorDataMsg(
@@ -217,7 +224,7 @@ class DCMonitorGateway:
                         self.app.call_from_thread(self.app.post_message, msg)
                     except Exception as e:
                         print(f"  [{timestamp}] {node_tag} >> {payload}  [post error: {e}]")
-                else:
+                elif not is_bg_poll:
                     print(f"[{timestamp}] {node_tag} >> {payload}")
             else:
                 self.log(f"[{timestamp}] {node_tag} >> {payload}", _from_thread=True)
@@ -302,6 +309,13 @@ class DCMonitorGateway:
                     )
             except Exception:
                 pass
+
+        # Auto-start web poll if requested and not already running
+        if self._web_poll_requested:
+            pm = self._power_manager
+            if not (self._web_poll_task and not self._web_poll_task.done()):
+                if not (pm and pm.threshold_mw is not None and pm._polling):
+                    asyncio.ensure_future(self.start_web_poll(self._web_poll_interval))
 
         return True
 
@@ -432,6 +446,73 @@ class DCMonitorGateway:
         """Start continuous monitoring on a mesh node"""
         self._monitoring = True
         return await self.send_to_node(node, "MONITOR")
+
+    # ---- Web Auto-Poll (v0.7.1 Phase 3) ----
+
+    async def start_web_poll(self, interval: float = 2.0):
+        """Start auto-polling ALL:READ at the given interval.
+
+        PM-aware: defers if PowerManager poll_loop is active.
+        """
+        self._web_poll_interval = max(0.5, min(30.0, interval))
+        self._web_poll_requested = True
+
+        # Don't start a new task if one is already running
+        if self._web_poll_task and not self._web_poll_task.done():
+            self.log(f"[POLL] Interval updated to {self._web_poll_interval}s")
+            return
+
+        # Don't start if PM is actively polling
+        pm = self._power_manager
+        if pm and pm.threshold_mw is not None and pm._polling:
+            self.log(f"[POLL] Requested {self._web_poll_interval}s — deferred (PM active)")
+            return
+
+        self._web_poll_task = asyncio.ensure_future(self._web_poll_loop())
+        self.log(f"[POLL] Started: ALL:READ every {self._web_poll_interval}s")
+
+        # Broadcast poll status to dashboard
+        if self._web_enabled:
+            try:
+                import web_server
+                await web_server.broadcast_state_change("poll_update", {
+                    "active": True, "interval": self._web_poll_interval,
+                })
+            except Exception:
+                pass
+
+    async def stop_web_poll(self):
+        """Stop auto-polling."""
+        self._web_poll_requested = False
+        if self._web_poll_task and not self._web_poll_task.done():
+            self._web_poll_task.cancel()
+            try:
+                await self._web_poll_task
+            except asyncio.CancelledError:
+                pass
+        self._web_poll_task = None
+        self.log("[POLL] Stopped")
+
+        if self._web_enabled:
+            try:
+                import web_server
+                await web_server.broadcast_state_change("poll_update", {
+                    "active": False, "interval": self._web_poll_interval,
+                })
+            except Exception:
+                pass
+
+    async def _web_poll_loop(self):
+        """Send ALL:READ at regular intervals. Silent — data flows via notification_handler."""
+        try:
+            while self._web_poll_requested:
+                if self.client and self.client.is_connected and not self._reconnecting:
+                    await self.send_to_node("ALL", "READ", _silent=True)
+                await asyncio.sleep(self._web_poll_interval)
+        except asyncio.CancelledError:
+            pass
+        finally:
+            self._web_poll_task = None
 
     # ---- Auto-Reconnect (v0.7.0 Phase 1) ----
 

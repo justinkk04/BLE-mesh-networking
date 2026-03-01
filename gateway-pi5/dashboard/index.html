@@ -17,7 +17,15 @@
 <body>
     <header id="header">
         <h1>DC Monitor Mesh Gateway</h1>
-        <div id="connection-badge" class="badge disconnected">● Disconnected</div>
+        <div class="header-controls">
+            <div id="poll-controls">
+                <label for="poll-interval">Poll:</label>
+                <input id="poll-interval" type="number" min="0.5" max="30" step="0.5" value="2.0">
+                <span class="unit">s</span>
+                <button id="poll-toggle" class="poll-btn">Start</button>
+            </div>
+            <div id="connection-badge" class="badge disconnected">● Disconnected</div>
+        </div>
     </header>
 
     <main id="main-grid">
@@ -54,14 +62,21 @@
 
         <section id="history-section" class="panel">
             <h2>History</h2>
-            <div id="time-controls">
-                <button class="time-btn active" data-minutes="5">5m</button>
-                <button class="time-btn" data-minutes="30">30m</button>
-                <button class="time-btn" data-minutes="60">1h</button>
-                <button class="time-btn" data-minutes="1440">24h</button>
+            <div class="chart-controls">
+                <div id="metric-tabs">
+                    <button class="metric-tab active" data-metric="power">Power</button>
+                    <button class="metric-tab" data-metric="voltage">Voltage</button>
+                    <button class="metric-tab" data-metric="current">Current</button>
+                </div>
+                <div id="time-controls">
+                    <button class="time-btn active" data-minutes="5">5m</button>
+                    <button class="time-btn" data-minutes="30">30m</button>
+                    <button class="time-btn" data-minutes="60">1h</button>
+                    <button class="time-btn" data-minutes="1440">24h</button>
+                </div>
             </div>
-            <div class="chart-container">
-                <canvas id="power-chart"></canvas>
+            <div id="charts-container">
+                <!-- Per-node charts created dynamically by charts.js -->
             </div>
         </section>
 

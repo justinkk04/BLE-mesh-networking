@@ -16,6 +16,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 import db
+from power_manager import PowerManager
 
 
 # --- WebSocket Manager ---
@@ -166,10 +167,59 @@ async def _execute_command(cmd: str):
         elif verb.isdigit():
             # Bare number = set duty on target node
             await _gateway.set_duty(_gateway.target_node, int(verb))
+        # Poll control: "poll <interval>" / "poll stop"
+        elif verb == 'poll':
+            if len(parts) >= 2 and parts[1] in ('stop', 'off'):
+                await _gateway.stop_web_poll()
+            elif len(parts) >= 2:
+                try:
+                    interval = float(parts[1])
+                    await _gateway.start_web_poll(interval)
+                except ValueError:
+                    await broadcast_log(f"[ERROR] Invalid poll interval: {parts[1]}")
+            else:
+                # Toggle: start at default if stopped, else show status
+                if _gateway._web_poll_requested:
+                    await broadcast_log(
+                        f"Polling active: every {_gateway._web_poll_interval}s "
+                        f"(use 'poll stop' to disable)")
+                else:
+                    await _gateway.start_web_poll(_gateway._web_poll_interval)
+        # Power Manager: "threshold <mW>" / "threshold off"
+        elif verb == 'threshold':
+            if len(parts) < 2:
+                await broadcast_log("Usage: threshold <mW> or threshold off")
+            elif parts[1] in ('off', 'disable'):
+                if _gateway._power_manager:
+                    await _gateway._power_manager.disable()
+            else:
+                try:
+                    mw = float(parts[1])
+                    if not _gateway._power_manager:
+                        _gateway._power_manager = PowerManager(_gateway)
+                    _gateway._power_manager.set_threshold(mw)
+                    asyncio.ensure_future(_gateway._power_manager.poll_loop())
+                except ValueError:
+                    await broadcast_log(f"[ERROR] Invalid threshold: {parts[1]}")
+        # Priority: "priority <id>" / "priority off"
+        elif verb == 'priority':
+            if len(parts) < 2:
+                await broadcast_log("Usage: priority <node_id> or priority off")
+            elif parts[1] in ('off', 'none', 'clear'):
+                if _gateway._power_manager:
+                    _gateway._power_manager.clear_priority()
+                    await broadcast_log("Priority node cleared")
+            else:
+                if _gateway._power_manager:
+                    _gateway._power_manager.set_priority(parts[1])
+                    await broadcast_log(f"Priority node set to: {parts[1]}")
+                else:
+                    await broadcast_log("[ERROR] Set a threshold first")
         elif verb == 'help':
             await broadcast_log(
                 "Commands: read | r, stop | s, ramp, duty <0-100>, "
-                "node <id> <r|s|ramp|duty> [val]"
+                "node <id> <r|s|ramp|duty> [val], poll <sec> | poll stop, "
+                "threshold <mW> | threshold off, priority <id> | priority off"
             )
         else:
             # Fall through: try sending raw to BLE  
@@ -205,6 +255,106 @@ async def post_command(req: CommandRequest):
     return {"status": "sent", "command": req.command}
 
 
+# --- Settings REST API ---
+
+@app.get("/api/settings")
+async def get_settings():
+    """Return current poll and PM settings."""
+    if not _gateway:
+        return {"error": "Gateway not initialized"}
+    pm = _gateway._power_manager
+    return {
+        "poll": {
+            "active": _gateway._web_poll_requested,
+            "interval": _gateway._web_poll_interval,
+        },
+        "threshold_mw": pm.threshold_mw if pm else None,
+        "priority_node": pm.priority_node if pm else None,
+    }
+
+
+class PollSettings(BaseModel):
+    interval: float
+
+@app.put("/api/settings/poll")
+async def set_poll(settings: PollSettings):
+    """Start or update auto-poll interval."""
+    if not _gateway:
+        return {"error": "Gateway not initialized"}
+    await _gateway.start_web_poll(settings.interval)
+    return {"status": "ok", "interval": _gateway._web_poll_interval}
+
+@app.delete("/api/settings/poll")
+async def stop_poll():
+    """Stop auto-polling."""
+    if not _gateway:
+        return {"error": "Gateway not initialized"}
+    await _gateway.stop_web_poll()
+    return {"status": "ok"}
+
+
+class ThresholdSettings(BaseModel):
+    threshold_mw: float
+
+@app.put("/api/settings/threshold")
+async def set_threshold(settings: ThresholdSettings):
+    """Set PM power threshold."""
+    if not _gateway:
+        return {"error": "Gateway not initialized"}
+    if not _gateway._power_manager:
+        _gateway._power_manager = PowerManager(_gateway)
+    _gateway._power_manager.set_threshold(settings.threshold_mw)
+    asyncio.ensure_future(_gateway._power_manager.poll_loop())
+    return {"status": "ok", "threshold_mw": settings.threshold_mw}
+
+@app.delete("/api/settings/threshold")
+async def clear_threshold():
+    """Disable PM."""
+    if not _gateway:
+        return {"error": "Gateway not initialized"}
+    if _gateway._power_manager:
+        await _gateway._power_manager.disable()
+    return {"status": "ok"}
+
+
+class PrioritySettings(BaseModel):
+    node_id: str
+
+@app.put("/api/settings/priority")
+async def set_priority(settings: PrioritySettings):
+    """Set PM priority node."""
+    if not _gateway:
+        return {"error": "Gateway not initialized"}
+    if not _gateway._power_manager:
+        return {"error": "Set a threshold first"}
+    _gateway._power_manager.set_priority(settings.node_id)
+    return {"status": "ok", "priority_node": settings.node_id}
+
+@app.delete("/api/settings/priority")
+async def clear_priority():
+    """Clear PM priority node."""
+    if not _gateway:
+        return {"error": "Gateway not initialized"}
+    if _gateway._power_manager:
+        _gateway._power_manager.clear_priority()
+    return {"status": "ok"}
+
+
+# --- DB Maintenance ---
+
+@app.on_event("startup")
+async def _start_db_maintenance():
+    """Hourly DB purge of readings older than 7 days."""
+    async def _maintenance_loop():
+        while True:
+            await asyncio.sleep(3600)  # 1 hour
+            try:
+                db.purge_old_readings(days=7)
+            except Exception:
+                pass
+    asyncio.create_task(_maintenance_loop())
+
+
 # --- State Builder ---
 
 def _build_state() -> dict:
@@ -221,6 +371,14 @@ def _build_state() -> dict:
             "reconnecting": _gateway._reconnecting,
         },
         "power_manager": None,
+        "poll": {
+            "active": _gateway._web_poll_requested and (
+                _gateway._web_poll_task is not None
+                and not _gateway._web_poll_task.done()
+            ) if _gateway._web_poll_task else False,
+            "requested": _gateway._web_poll_requested,
+            "interval": _gateway._web_poll_interval,
+        },
         "nodes": {},
         "sensing_node_count": _gateway.sensing_node_count,
     }

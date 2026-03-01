@@ -281,6 +281,13 @@ class PowerManager:
                 await self._bootstrap_discovery()
                 await asyncio.sleep(2.0)
             self._polling = True
+
+            # Pause web auto-poll while PM is active (PM does its own polling)
+            gw = self.gateway
+            if getattr(gw, '_web_poll_task', None) and not gw._web_poll_task.done():
+                gw._web_poll_task.cancel()
+                gw.log("[POLL] Paused — PowerManager active")
+
             while self.threshold_mw is not None:
                 if self._paused:
                     await asyncio.sleep(1.0)
@@ -294,6 +301,11 @@ class PowerManager:
             self._polling = False
         except asyncio.CancelledError:
             self._polling = False
+
+        # Resume web auto-poll if user had it enabled
+        if getattr(self.gateway, '_web_poll_requested', False):
+            asyncio.ensure_future(self.gateway.start_web_poll(
+                self.gateway._web_poll_interval))
 
     async def _poll_all_nodes(self):
         """Poll all nodes with a single group READ.
