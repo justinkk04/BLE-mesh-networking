@@ -76,6 +76,13 @@ function handleMessage(msg) {
         });
         const allNodes = nodes.getAllNodes();
         topology.updateGraph(allNodes);
+
+        // Show in console if this is a user-triggered response
+        if (msg.user_triggered) {
+            const d = msg.data;
+            const line = `NODE${msg.node_id} >> D:${d.duty}%, V:${d.voltage.toFixed(3)}V, I:${d.current.toFixed(1)}mA, P:${d.power.toFixed(1)}mW`;
+            consoleLog.appendLog(line, msg.timestamp);
+        }
     } else if (msg.type === 'log') {
         consoleLog.appendLog(msg.text, msg.timestamp);
     } else if (msg.type === 'event') {

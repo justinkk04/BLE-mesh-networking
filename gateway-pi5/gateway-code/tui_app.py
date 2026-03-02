@@ -51,7 +51,8 @@ class MeshGatewayApp(App):
     class SensorDataMsg(Message):
         """Sensor data arrived from a mesh node."""
         def __init__(self, node_id: str, duty: int, voltage: float,
-                     current: float, power: float, raw: str):
+                     current: float, power: float, raw: str,
+                     is_user_response: bool = False):
             super().__init__()
             self.node_id = node_id
             self.duty = duty
@@ -59,6 +60,7 @@ class MeshGatewayApp(App):
             self.current = current
             self.power = power
             self.raw = raw
+            self.is_user_response = is_user_response
 
     class LogMsg(Message):
         """Generic log line for the RichLog panel."""
@@ -197,6 +199,15 @@ class MeshGatewayApp(App):
         """Parse and execute a user command via BLE thread."""
         gw = self.gateway
         bt = self._ble_thread
+        # Preempt poll so user command takes priority
+        if hasattr(gw, '_poll_interrupt'):
+            gw._poll_interrupt.set()
+        # Mark target for user response tracking on BLE-sending commands
+        first_word = cmd.split()[0] if cmd else ''
+        _ble_cmds = {'stop', 's', 'ramp', 'r', 'status', 'read', 'monitor', 'm'}
+        if first_word in _ble_cmds or cmd.startswith('duty') or cmd.startswith('raw') or first_word.isdigit():
+            if hasattr(gw, 'mark_user_command'):
+                gw.mark_user_command(gw.target_node)
         try:
             if cmd in ['q', 'quit', 'exit']:
                 if gw._power_manager:
@@ -298,6 +309,47 @@ class MeshGatewayApp(App):
                 else:
                     self.log_message("Power management not active. Use: threshold <mW>")
 
+            elif cmd.startswith('poll'):
+                parts = cmd.split(None, 1)
+                if len(parts) < 2:
+                    # Show poll status
+                    if gw._web_poll_requested:
+                        active = gw._web_poll_task and not gw._web_poll_task.done()
+                        status = "active" if active else "requested (deferred)"
+                        self.log_message(f"Polling: {status} ({gw._web_poll_interval}s)")
+                    else:
+                        self.log_message("Polling: stopped")
+                else:
+                    arg = parts[1].strip()
+                    if arg in ('stop', 'off'):
+                        await bt.submit_async(gw.stop_web_poll())
+                        self.log_message("Polling stopped")
+                    elif arg.startswith('show'):
+                        show_parts = arg.split(None, 1)
+                        if len(show_parts) >= 2 and show_parts[1] in ('on', 'true', '1'):
+                            gw._poll_show_log = True
+                            self.log_message("Poll data: now visible in log")
+                        elif len(show_parts) >= 2 and show_parts[1] in ('off', 'false', '0'):
+                            gw._poll_show_log = False
+                            self.log_message("Poll data: hidden from log")
+                        else:
+                            # Display latest readings without sending BLE command
+                            if gw._last_readings:
+                                for nid, r in sorted(gw._last_readings.items()):
+                                    self.log_message(
+                                        f"  Node {nid}: D:{r['duty']}% "
+                                        f"V:{r['voltage']:.3f}V "
+                                        f"I:{r['current']:.2f}mA "
+                                        f"P:{r['power']:.1f}mW")
+                            else:
+                                self.log_message("No poll data yet")
+                    else:
+                        try:
+                            interval = float(arg)
+                            await bt.submit_async(gw.start_web_poll(interval))
+                        except ValueError:
+                            self.log_message(f"Usage: poll <seconds> | poll stop | poll show")
+
             elif cmd in ['d', 'debug']:
                 self.action_toggle_debug()
 
@@ -340,10 +392,11 @@ class MeshGatewayApp(App):
         self._update_node_table(msg)
         self.update_status()
 
-        # Show in log unless it's a background PM poll
-        pm = self.gateway._power_manager
-        is_bg_poll = pm and pm._polling and pm.threshold_mw is not None
-        if not is_bg_poll or self.debug_mode:
+        # Show in log if: user-triggered response, poll_show_log enabled, or debug mode
+        show_in_log = (msg.is_user_response
+                       or getattr(self.gateway, '_poll_show_log', False)
+                       or self.debug_mode)
+        if show_in_log:
             log = self.query_one("#log", RichLog)
             log.write(msg.raw)
 
@@ -474,6 +527,13 @@ class MeshGatewayApp(App):
             "  threshold off  Disable power management\n"
             "  priority off   Clear priority node\n"
             "  power          Show power manager status\n"
+            "\n"
+            "[bold]--- Polling ---[/bold]\n"
+            "  poll <sec>     Start/adjust poll interval\n"
+            "  poll stop      Stop polling\n"
+            "  poll show      Display latest readings\n"
+            "  poll show on   Show poll data in log\n"
+            "  poll show off  Hide poll data from log\n"
             "\n"
             "[bold]--- Keys / Misc ---[/bold]\n"
             "  debug / d      Toggle debug mode (or F2)\n"

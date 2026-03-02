@@ -133,6 +133,10 @@ async def _execute_command(cmd: str):
     if not cmd:
         return
 
+    # Preempt poll so user command takes priority
+    if hasattr(_gateway, '_poll_interrupt'):
+        _gateway._poll_interrupt.set()
+
     parts = cmd.lower().split()
     verb = parts[0]
 
@@ -141,6 +145,7 @@ async def _execute_command(cmd: str):
         if verb == 'node' and len(parts) >= 3:
             node_id = parts[1]
             subcmd = parts[2]
+            _gateway.mark_user_command(node_id)
             if subcmd in ('r', 'read'):
                 await _gateway.read_sensor(node_id)
             elif subcmd in ('s', 'stop'):
@@ -157,14 +162,19 @@ async def _execute_command(cmd: str):
             await broadcast_log(f"Target node set to: {_gateway.target_node}")
         # Short-hand commands using current target node
         elif verb in ('r', 'read'):
+            _gateway.mark_user_command(_gateway.target_node)
             await _gateway.read_sensor(_gateway.target_node)
         elif verb in ('s', 'stop'):
+            _gateway.mark_user_command(_gateway.target_node)
             await _gateway.stop_node(_gateway.target_node)
         elif verb in ('ramp',):
+            _gateway.mark_user_command(_gateway.target_node)
             await _gateway.start_ramp(_gateway.target_node)
         elif verb == 'duty' and len(parts) >= 2:
+            _gateway.mark_user_command(_gateway.target_node)
             await _gateway.set_duty(_gateway.target_node, int(parts[1]))
         elif verb.isdigit():
+            _gateway.mark_user_command(_gateway.target_node)
             # Bare number = set duty on target node
             await _gateway.set_duty(_gateway.target_node, int(verb))
         # Poll control: "poll <interval>" / "poll stop"
@@ -425,13 +435,14 @@ def _build_state() -> dict:
 
 # --- Broadcast Helpers (called by gateway event hooks) ---
 
-async def broadcast_sensor_data(node_id: str, data: dict):
+async def broadcast_sensor_data(node_id: str, data: dict, user_triggered: bool = False):
     """Called by dc_gateway.notification_handler on sensor data."""
     await manager.broadcast({
         "type": "sensor_data",
         "node_id": node_id,
         "data": data,
         "timestamp": time.time(),
+        "user_triggered": user_triggered,
     })
 
 

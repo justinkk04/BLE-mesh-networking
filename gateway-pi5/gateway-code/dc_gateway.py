@@ -56,6 +56,35 @@ class DCMonitorGateway:
         self._web_poll_task = None
         self._web_poll_interval = 2.0  # seconds (adjustable 0.5–30)
         self._web_poll_requested = False
+        self._ble_cmd_lock = asyncio.Lock()    # Serialize GATT writes
+        self._poll_interrupt = asyncio.Event() # Wakes poll loop for user cmd
+        self._pending_user_nodes = set()       # Node IDs awaiting user-triggered response ("*" = ALL)
+        self._poll_show_log = False            # When True, poll data also shows in TUI log
+
+    def mark_user_command(self, target_node: str):
+        """Mark target nodes as expecting a user-triggered response.
+
+        Also interrupts the poll loop so the user command takes priority.
+        Call this BEFORE sending any user-initiated BLE command.
+
+        For ALL targets, adds each known node individually so that
+        each node's response is tracked independently (no wildcard race).
+        """
+        self._poll_interrupt.set()
+        if str(target_node).upper() == "ALL":
+            # Add each known node individually — avoids wildcard race with poll loop
+            added = False
+            for nid in list(self.known_nodes):
+                self._pending_user_nodes.add(str(nid))
+                added = True
+            for nid in list(self._last_readings.keys()):
+                self._pending_user_nodes.add(str(nid))
+                added = True
+            if not added:
+                # Fallback: no nodes known yet, use wildcard
+                self._pending_user_nodes.add("*")
+        else:
+            self._pending_user_nodes.add(str(target_node))
 
     def log(self, text: str, style: str = "", _from_thread: bool = False,
             _debug: bool = False):
@@ -192,6 +221,14 @@ class DCMonitorGateway:
                 if evt:
                     evt.set()
 
+                # Determine if this is a user-triggered response
+                is_user_response = False
+                if node_id in self._pending_user_nodes:
+                    self._pending_user_nodes.discard(node_id)
+                    is_user_response = True
+                elif "*" in self._pending_user_nodes:
+                    is_user_response = True
+
                 # Web dashboard: broadcast sensor data + record to DB
                 if self._web_enabled:
                     try:
@@ -204,7 +241,7 @@ class DCMonitorGateway:
                                     "duty": duty, "voltage": voltage,
                                     "current": current, "power": power,
                                     "last_seen": time.time(),
-                                }),
+                                }, user_triggered=is_user_response),
                                 loop
                             )
                         db.insert_reading(node_id, duty, voltage, current, power)
@@ -212,19 +249,17 @@ class DCMonitorGateway:
                         pass
 
                 # Post to TUI for UI update (always use call_from_thread — we're on bleak's thread)
-                # Suppress log spam when web poll or PM poll is running (same as PM error suppression)
-                is_bg_poll = (getattr(self, '_web_poll_active', False)
-                              or (self._power_manager and self._power_manager._polling))
                 if self.app and _HAS_TEXTUAL:
                     try:
                         msg = self.app.SensorDataMsg(
                             node_id, duty, voltage, current, power,
-                            f"[{timestamp}] {node_tag} >> {payload}"
+                            f"[{timestamp}] {node_tag} >> {payload}",
+                            is_user_response=is_user_response
                         )
                         self.app.call_from_thread(self.app.post_message, msg)
                     except Exception as e:
                         print(f"  [{timestamp}] {node_tag} >> {payload}  [post error: {e}]")
-                elif not is_bg_poll:
+                elif is_user_response or self._poll_show_log:
                     print(f"[{timestamp}] {node_tag} >> {payload}")
             else:
                 self.log(f"[{timestamp}] {node_tag} >> {payload}", _from_thread=True)
@@ -344,7 +379,7 @@ class DCMonitorGateway:
                 pass
 
     async def send_command(self, cmd: str, _silent: bool = False):
-        """Send raw command string to GATT gateway"""
+        """Send raw command string to GATT gateway (serialized via lock)."""
         if self._reconnecting:
             if not _silent:
                 self.log("[WARN] Cannot send — reconnecting...", style="yellow")
@@ -354,15 +389,16 @@ class DCMonitorGateway:
                 self.log("[WARN] Not connected", style="yellow")
             return False
 
-        try:
-            await self.client.write_gatt_char(COMMAND_CHAR_UUID, cmd.encode('utf-8'))
-            if not _silent:
-                self.log(f"Sent: {cmd}")
-            return True
-        except Exception as e:
-            if not _silent:
-                self.log(f"Failed to send command: {e}")
-            return False
+        async with self._ble_cmd_lock:
+            try:
+                await self.client.write_gatt_char(COMMAND_CHAR_UUID, cmd.encode('utf-8'))
+                if not _silent:
+                    self.log(f"Sent: {cmd}")
+                return True
+            except Exception as e:
+                if not _silent:
+                    self.log(f"Failed to send command: {e}")
+                return False
 
     async def _wait_node_response(self, node_id: str, timeout: float = 5.0):
         """Wait until a specific node responds, then return immediately.
@@ -503,12 +539,35 @@ class DCMonitorGateway:
                 pass
 
     async def _web_poll_loop(self):
-        """Send ALL:READ at regular intervals. Silent — data flows via notification_handler."""
+        """Background ALL:READ with user-command preemption.
+
+        The poll loop yields immediately when _poll_interrupt is set,
+        letting user commands take priority on the GATT characteristic.
+        """
         try:
             while self._web_poll_requested:
+                # Yield if user command is pending
+                if self._poll_interrupt.is_set():
+                    self._poll_interrupt.clear()
+                    await asyncio.sleep(0.1)
+                    continue
+
+                # Clear wildcard user-pending (user cmd responses have arrived by now)
+                self._pending_user_nodes.discard("*")
+
                 if self.client and self.client.is_connected and not self._reconnecting:
                     await self.send_to_node("ALL", "READ", _silent=True)
-                await asyncio.sleep(self._web_poll_interval)
+
+                # Interruptible sleep: wakes early if user command arrives
+                try:
+                    await asyncio.wait_for(
+                        self._poll_interrupt.wait(),
+                        timeout=self._web_poll_interval
+                    )
+                    # Woken by user command — yield and loop
+                    self._poll_interrupt.clear()
+                except asyncio.TimeoutError:
+                    pass  # Normal: interval elapsed, next poll
         except asyncio.CancelledError:
             pass
         finally:
