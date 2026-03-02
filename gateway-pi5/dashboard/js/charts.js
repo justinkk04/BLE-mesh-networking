@@ -243,3 +243,10 @@ function updateAllWindows() {
         chart.update('none');
     }
 }
+
+// Called by app.js when switching to Analytics tab
+// Chart.js needs the container visible to measure canvas dimensions
+export function refresh() {
+    rebuildAllCharts();
+}
+

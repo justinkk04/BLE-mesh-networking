@@ -1,19 +1,27 @@
-// WebSocket Manager and App Bootstrap
+// WebSocket Manager, Tab Navigation, and App Bootstrap
 import * as topology from './topology.js';
 import * as nodes from './nodes.js';
 import * as charts from './charts.js';
 import * as consoleLog from './console.js';
 
-let ws = null;
+let ws;
 let reconnectDelay = 1000;
-const MAX_DELAY = 30000;
+const MAX_DELAY = 10000;
+let currentGatewayNode = null; // Store the active GATT node ID
 
+// ── App Init ──
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize modules
     topology.init();
     nodes.init(sendCommand);
     charts.init();
     consoleLog.init(sendCommand);
+
+    // Tab navigation
+    initTabs();
+
+    // Poll controls
+    initPollControls();
 
     // Initial data fetch
     fetchInitialState();
@@ -22,6 +30,61 @@ document.addEventListener('DOMContentLoaded', () => {
     connectWebSocket();
 });
 
+// ── Tab Navigation ──
+function initTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabId = btn.dataset.tab;
+            switchTab(tabId);
+        });
+    });
+}
+
+function switchTab(tabId) {
+    // Deactivate all tabs and content
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+    // Activate selected
+    const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+    const content = document.getElementById(tabId);
+    if (btn) btn.classList.add('active');
+    if (content) content.classList.add('active');
+
+    // Refresh charts when switching to analytics tab (ensures canvas sizes are correct)
+    if (tabId === 'tab-analytics') {
+        charts.refresh();
+    } else if (tabId === 'tab-dashboard') {
+        topology.refresh();
+    }
+}
+
+// ── Poll Controls ──
+function initPollControls() {
+    const pollBtn = document.getElementById('poll-toggle');
+    const pollInput = document.getElementById('poll-interval');
+    if (pollBtn) {
+        pollBtn.addEventListener('click', () => {
+            const isActive = pollBtn.classList.contains('active');
+            if (isActive) {
+                sendCommand('poll stop');
+            } else {
+                const interval = parseFloat(pollInput?.value) || 2.0;
+                sendCommand(`poll ${interval}`);
+            }
+        });
+    }
+    if (pollInput) {
+        pollInput.addEventListener('change', () => {
+            if (document.getElementById('poll-toggle')?.classList.contains('active')) {
+                const interval = parseFloat(pollInput.value) || 2.0;
+                sendCommand(`poll ${interval}`);
+            }
+        });
+    }
+}
+
+// ── WebSocket ──
 async function fetchInitialState() {
     try {
         const res = await fetch('/api/state');
@@ -39,12 +102,12 @@ function connectWebSocket() {
 
     ws.onopen = () => {
         reconnectDelay = 1000;
-        updateConnectionBadge('connected', 'WebSocket: Connected');
+        updateConnectionBadge('connected', '● Connected');
         document.getElementById('ws-status').textContent = 'WebSocket: Connected';
     };
 
     ws.onclose = () => {
-        updateConnectionBadge('disconnected', 'WebSocket: Disconnected');
+        updateConnectionBadge('disconnected', '● Disconnected');
         document.getElementById('ws-status').textContent = 'WebSocket: Reconnecting...';
         setTimeout(connectWebSocket, reconnectDelay);
         reconnectDelay = Math.min(reconnectDelay * 2, MAX_DELAY);
@@ -64,6 +127,7 @@ function connectWebSocket() {
     };
 }
 
+// ── Message Handlers ──
 function handleMessage(msg) {
     if (msg.type === 'state') {
         handleState(msg.data);
@@ -75,7 +139,7 @@ function handleMessage(msg) {
             current: msg.data.current,
         });
         const allNodes = nodes.getAllNodes();
-        topology.updateGraph(allNodes);
+        topology.updateGraph(allNodes, currentGatewayNode);
 
         // Show in console if this is a user-triggered response
         if (msg.user_triggered) {
@@ -91,7 +155,7 @@ function handleMessage(msg) {
         } else if (msg.event === 'poll_update') {
             updatePollStatus(msg.data);
         } else if (['connected', 'disconnected', 'reconnecting'].includes(msg.event)) {
-            fetchInitialState(); // Refresh full state on connection events
+            fetchInitialState();
         }
     }
 }
@@ -102,6 +166,7 @@ function handleState(state) {
     // Gateway connection status
     if (state.gateway) {
         const gw = state.gateway;
+        currentGatewayNode = gw.connected_node !== undefined ? gw.connected_node : null;
         let badgeStatus = 'disconnected';
         let text = '● Disconnected';
         if (gw.reconnecting) {
@@ -109,7 +174,7 @@ function handleState(state) {
             text = '● Reconnecting';
         } else if (gw.connected) {
             badgeStatus = 'connected';
-            text = `● Connected to ${gw.device_name || gw.device_address}`;
+            text = `● ${gw.device_name || gw.device_address || 'Connected'}`;
         }
         updateConnectionBadge(badgeStatus, text);
     }
@@ -119,7 +184,7 @@ function handleState(state) {
         Object.entries(state.nodes).forEach(([id, data]) => {
             nodes.updateNode(id, data);
         });
-        topology.updateGraph(nodes.getAllNodes(), state.gateway?.device_address);
+        topology.updateGraph(nodes.getAllNodes(), currentGatewayNode);
     }
 
     // Power Manager
@@ -134,7 +199,7 @@ function handleState(state) {
 
     // Header count
     if (state.sensing_node_count !== undefined) {
-        document.getElementById('node-summary').textContent = `${state.sensing_node_count} sensing, 0 relays`;
+        document.getElementById('node-summary').textContent = `${state.sensing_node_count} nodes active`;
     }
 }
 
@@ -151,7 +216,6 @@ function updatePowerManager(pm) {
     document.getElementById('pm-threshold').textContent = pm.threshold_mw ? `${pm.threshold_mw.toFixed(1)} mW` : '--';
     document.getElementById('pm-budget').textContent = pm.budget_mw ? `${pm.budget_mw.toFixed(1)} mW` : (pm.budget ? `${pm.budget.toFixed(1)} mW` : '--');
 
-    // total_power vs total_power_mw based on event vs state payload
     const total = pm.total_power_mw !== undefined ? pm.total_power_mw : pm.total_power;
     document.getElementById('pm-total').textContent = total !== undefined ? `${total.toFixed(1)} mW` : '--';
 
@@ -184,38 +248,13 @@ function updatePollStatus(poll) {
     }
 }
 
-// Wire poll controls on DOM ready
-document.addEventListener('DOMContentLoaded', () => {
-    const pollBtn = document.getElementById('poll-toggle');
-    const pollInput = document.getElementById('poll-interval');
-    if (pollBtn) {
-        pollBtn.addEventListener('click', () => {
-            const isActive = pollBtn.classList.contains('active');
-            if (isActive) {
-                sendCommand('poll stop');
-            } else {
-                const interval = parseFloat(pollInput?.value) || 2.0;
-                sendCommand(`poll ${interval}`);
-            }
-        });
-    }
-    if (pollInput) {
-        pollInput.addEventListener('change', () => {
-            if (document.getElementById('poll-toggle')?.classList.contains('active')) {
-                const interval = parseFloat(pollInput.value) || 2.0;
-                sendCommand(`poll ${interval}`);
-            }
-        });
-    }
-});
-
+// ── Send Command ──
 export function sendCommand(cmdStr) {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         consoleLog.appendLog(`[ERROR] WebSocket disconnected. Cannot send: ${cmdStr}`, Date.now() / 1000);
         return;
     }
 
-    // Send via WebSocket (backend expects {"type": "command", "command": "..."})
     ws.send(JSON.stringify({
         type: 'command',
         command: cmdStr
