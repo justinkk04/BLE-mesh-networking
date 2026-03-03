@@ -16,9 +16,13 @@
   - D3.js force-directed mesh topology graph showing Pi 5 → GATT node → remote nodes with live status coloring (`js/topology.js`).
   - Real-time node cards with duty/voltage/current/power metrics, power bars, and online/stale/offline status badges (`js/nodes.js`).
   - Chart.js time-series power chart with area fill, formatted tooltips, and 5m/30m/1h/24h time windows (`js/charts.js`).
-  - Live command console with input history (up/down arrows), auto-scroll, and full command dispatcher (`js/console.js`).
-  - WebSocket manager with auto-reconnect and exponential backoff (`js/app.js`).
   - Command dispatcher in `web_server.py` parsing user-friendly commands (`read`, `node 0 duty 50`, etc.) into BLE gateway calls.
+
+- **Web Dashboard Polish & Settings (Phase 3)**
+  - Added background auto-polling (`start_web_poll`) to `dc_gateway.py` to keep the UI fresh without manual `read` commands.
+  - Built new `/api/settings` REST endpoints to manage poll intervals, PM thresholds, and PM priority nodes natively from the web.
+  - Added multi-metric charts (Power, Voltage, Current) to the dashboard `charts.js` with dynamic toggling and time-window filtering.
+  - Embedded poll controls directly into the dashboard header UI for quick start/stop and interval adjustments.
 
 - **Web Dashboard Overhaul (Phase 4: "Midnight Vercel")**
   - **New Design System:** Completely rewrote CSS and HTML to achieve a premium, modern SaaS look (dark themes, frosted glassmorphism, accent colors, custom scrollbars).

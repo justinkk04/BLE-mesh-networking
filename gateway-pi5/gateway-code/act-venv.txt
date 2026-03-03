@@ -13,7 +13,7 @@ install requirements
 run scan
     python scan_ble.py
 run gateway
-    python gateway.py
+    python gateway.py --web
 
 address of new gattgateway
     10:51:DB:01:E8:A6
