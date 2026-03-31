@@ -32,13 +32,13 @@ void pwm_init(void) {
       .channel = LEDC_CHANNEL_0,
       .timer_sel = LEDC_TIMER_0,
       .gpio_num = PWM_GPIO,
-      .duty = PWM_MAX_DUTY, // HIGH = load OFF (inverted for 2N2222)
+      .duty = 0, // LOW = load OFF at boot
       .hpoint = 0,
   };
   ESP_ERROR_CHECK(ledc_channel_config(&channel));
 
   current_duty = 0;
-  ESP_LOGI(TAG, "PWM: %d Hz on GPIO%d (inverted, load OFF)", PWM_FREQ_HZ,
+  ESP_LOGI(TAG, "PWM: %d Hz on GPIO%d (load OFF at boot)", PWM_FREQ_HZ,
            PWM_GPIO);
 }
 
@@ -47,9 +47,8 @@ void set_duty(int percent) {
     percent = 0;
   if (percent > 100)
     percent = 100;
-  // Inverted: 0% load = full HIGH output, 100% load = full LOW output
-  int inverted = 100 - percent;
-  uint32_t duty_val = (inverted * PWM_MAX_DUTY) / 100;
+  // Direct: 0% = fully OFF, 100% = fully ON
+  uint32_t duty_val = ((uint32_t)percent * PWM_MAX_DUTY) / 100;
   ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty_val);
   ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
   current_duty = percent;

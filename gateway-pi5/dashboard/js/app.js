@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
     charts.init();
     consoleLog.init(sendCommand);
 
+    // Theme (must run before tabs so saved theme applies immediately)
+    initTheme();
+
     // Tab navigation
     initTabs();
 
@@ -29,6 +32,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // Connect WebSocket
     connectWebSocket();
 });
+
+// ── Theme Toggle ──
+function initTheme() {
+    const saved = localStorage.getItem('dashboard-theme');
+    const checkbox = document.getElementById('theme-checkbox');
+    if (!checkbox) return;
+
+    // Apply saved preference (default = dark)
+    if (saved === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        checkbox.checked = true;
+    }
+
+    checkbox.addEventListener('change', () => {
+        const theme = checkbox.checked ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('dashboard-theme', theme);
+    });
+}
 
 // ── Tab Navigation ──
 function initTabs() {

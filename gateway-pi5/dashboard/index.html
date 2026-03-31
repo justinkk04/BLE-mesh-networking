@@ -13,7 +13,7 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Dashboard Style -->
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style.css?v=2">
 </head>
 <body>
     <!-- ── Header ── -->
@@ -111,14 +111,37 @@
     <div id="tab-settings" class="tab-content">
         <div id="settings-content">
             <h2>Settings</h2>
-            <p>Configuration panel coming soon. Use console commands for now:</p>
-            <div style="margin-top: 1rem; font-family: var(--mono); font-size: 0.85rem; color: var(--text-secondary); line-height: 2;">
-                <code>poll &lt;seconds&gt;</code> — Set poll interval<br>
-                <code>poll stop</code> — Stop polling<br>
-                <code>threshold &lt;mW&gt;</code> — Set PM threshold<br>
-                <code>threshold off</code> — Disable PM<br>
-                <code>priority &lt;node_id&gt;</code> — Set priority node<br>
-                <code>help</code> — Show all commands
+
+            <!-- Appearance -->
+            <div class="settings-group">
+                <h3 class="settings-group-title">Appearance</h3>
+                <div class="settings-row">
+                    <div class="settings-label">
+                        <span class="settings-label-text">Theme</span>
+                        <span class="settings-label-desc">Switch between dark and light mode</span>
+                    </div>
+                    <label class="theme-toggle" id="theme-toggle">
+                        <input type="checkbox" id="theme-checkbox">
+                        <span class="toggle-track">
+                            <span class="toggle-icon toggle-moon">🌙</span>
+                            <span class="toggle-icon toggle-sun">☀️</span>
+                            <span class="toggle-thumb"></span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Command Reference -->
+            <div class="settings-group">
+                <h3 class="settings-group-title">Command Reference</h3>
+                <div style="font-family: var(--mono); font-size: 0.85rem; color: var(--text-secondary); line-height: 2;">
+                    <code>poll &lt;seconds&gt;</code> — Set poll interval<br>
+                    <code>poll stop</code> — Stop polling<br>
+                    <code>threshold &lt;mW&gt;</code> — Set PM threshold<br>
+                    <code>threshold off</code> — Disable PM<br>
+                    <code>priority &lt;node_id&gt;</code> — Set priority node<br>
+                    <code>help</code> — Show all commands
+                </div>
             </div>
         </div>
     </div>
