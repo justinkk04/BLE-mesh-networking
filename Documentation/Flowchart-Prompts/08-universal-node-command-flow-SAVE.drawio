@@ -1,0 +1,377 @@
+<mxfile host="65bd71144e">
+    <diagram id="Zcpl4ZxXSYfBJ8N4RXAe" name="Page-1">
+        <mxGraphModel dx="2910" dy="653" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1200" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1e1e2e;strokeColor=none;" parent="1" vertex="1">
+                    <mxGeometry x="-20" y="2.5" width="1900" height="1200" as="geometry"/>
+                </mxCell>
+                <mxCell id="title" value="Universal Node — Command Flow &amp; Execution Logic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d2038;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=20;fontStyle=1;align=center;arcSize=8;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="12" width="1800" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="sub" value="Pi 5 Gateway → GATT Node (any provisioned node) → BLE Mesh → Target Node(s) → process_command() → set_duty() / read sensor → response back" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontColor=#FFFFFF;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="66" width="1800" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="c1h" value="① COMMAND ENTRY — GATT" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#4f9ede;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="90" y="100" width="340" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="pi5" value="&lt;b&gt;Pi 5 Gateway&lt;/b&gt;&lt;br&gt;Sends: Command DUTY:50" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="135" width="260" height="95" as="geometry"/>
+                </mxCell>
+                <mxCell id="ep1" value="BLE GATT" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4f9ede;fontColor=#FFFFFF;fontSize=9;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="pi5" target="gatt_write" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="gatt_write" value="&lt;b&gt;Command&lt;/b&gt;&lt;br&gt;GATT write characteristic fires&lt;br&gt;on GATT Node" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="270" width="260" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="ep2" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4f9ede;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="gatt_write" target="parser" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="parser" value="&lt;b&gt;process GATT command&lt;/b&gt;&lt;br&gt;Parse Command&lt;br&gt;for as a internal string" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="400" width="220" height="68" as="geometry"/>
+                </mxCell>
+                <mxCell id="c2h" value="② ROUTING DECISION" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#f0a500;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="352.5" y="360" width="155" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="d_self" value="Target == self?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#3a2200;strokeColor=#f0a500;fontColor=#f0de00;fontSize=12;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="394" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="ep3" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4f9ede;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="parser" target="d_self" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="d_all" value="ALL nodes?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#3a2200;strokeColor=#f0a500;fontColor=#f0de00;fontSize=12;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="530" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="ep4" value="No" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#f0a500;fontColor=#aaaaaa;fontSize=10;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="d_self" target="d_all" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ep5" value="No" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#f0a500;fontColor=#aaaaaa;fontSize=10;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="d_all" target="d_vnd" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c3h" value="③ BLE MESH DISPATCH" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#e05c5c;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="680" y="303" width="170" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="unicast" value="&lt;b&gt;send vendor command&lt;/b&gt;&lt;br&gt;Unicast to target address" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a1010;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="740" y="680" width="210" height="68" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" style="edgeStyle=none;html=1;" edge="1" parent="1" source="grp_self" target="grp_mesh">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="grp_self" value="&lt;b&gt;Process locally first&lt;/b&gt;&lt;br&gt;process local and notify&lt;br&gt;(group send skips self)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a1010;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="752.5" y="590" width="185" height="68" as="geometry"/>
+                </mxCell>
+                <mxCell id="grp_mesh" value="&lt;b&gt;send vendor command&lt;/b&gt;&lt;br&gt;sends group address to&amp;nbsp;&lt;br&gt;all other nodes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a1010;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="740" y="495" width="210" height="68" as="geometry"/>
+                </mxCell>
+                <mxCell id="fallback" value="&lt;b&gt;Fallback&lt;/b&gt;&lt;br&gt;no sensor data returned" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2a1a00;strokeColor=#f0a500;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="542.5" y="830" width="210" height="68" as="geometry"/>
+                </mxCell>
+                <mxCell id="ep6" value="Yes (ALL)" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;fontColor=#FFFFFF;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="d_all" target="grp_self" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ep7" value="Yes (unicast)" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;fontColor=#FFFFFF;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="d_vnd" target="unicast" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ep8" value="No (not bound)" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#f0a500;fontColor=#FFFFFF;fontSize=10;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="d_vnd" target="fallback" edge="1">
+                    <mxGeometry x="-0.0007" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="418" y="730"/>
+                            <mxPoint x="410" y="730"/>
+                            <mxPoint x="410" y="770"/>
+                            <mxPoint x="648" y="770"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="local_direct" value="&lt;b&gt;process local and notify&lt;/b&gt;&lt;br&gt;No mesh hop needed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a1010;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="620" y="360" width="210" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="ep_self_yes" value="Yes" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;fontColor=#FFFFFF;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="d_self" target="local_direct" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c4h" value="④ TARGET NODE RECEIVES &amp; EXECUTES" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#4caf50;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1100" y="422" width="440" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="recv_cb" value="&lt;b&gt;custom model&lt;/b&gt;&lt;br&gt;fires on target node&lt;br&gt;Extracts command from mesh" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="1127.5" y="458" width="230" height="68" as="geometry"/>
+                </mxCell>
+                <mxCell id="em1" value="BLE Mesh&lt;br&gt;VND_OP_SEND" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;fontColor=#FFFFFF;fontSize=9;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=-0.002;entryY=0.676;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="unicast" target="recv_cb" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="em2" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" parent="1" source="grp_mesh" target="recv_cb" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="proc_cmd" value="&lt;b&gt;process command&lt;/b&gt;&lt;br&gt;Executes on the target node" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="1127.5" y="701" width="230" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="er1" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="recv_cb" target="proc_cmd" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="skip_note" value="&lt;b&gt;Skip self-echo&lt;/b&gt;&lt;br&gt;If src_addr == self, ignore&lt;br&gt;(group sends reach sender too)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2a1a00;strokeColor=#f0a500;fontColor=#ddbbff;fontSize=10;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1390" y="1103.5" width="200" height="68" as="geometry"/>
+                </mxCell>
+                <mxCell id="c5h" value="⑤ COMMAND OUTCOMES" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#9c6fde;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1360" y="883" width="180" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="out_ramp" value="&lt;div style=&quot;&quot;&gt;&lt;b style=&quot;background-color: initial;&quot;&gt;Command&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;background-color: initial;&quot;&gt;Loop command&lt;/span&gt;&lt;/div&gt;Returns final sensor reading" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2a1040;strokeColor=#9c6fde;fontColor=#ddbbff;fontSize=10;arcSize=15;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="1147.5" y="855" width="190" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="out_err" value="&lt;b&gt;Unknown command&lt;/b&gt;&lt;br&gt;Returns: ERROR" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a1010;strokeColor=#e05c5c;fontColor=#ffaaaa;fontSize=10;arcSize=15;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="1420" y="702.5" width="230" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="eo4" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#9c6fde;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="proc_cmd" target="out_ramp" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eo5" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="proc_cmd" target="out_err" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="resp1" value="&lt;b&gt;STATUS&lt;/b&gt;&lt;br&gt;Target sends response&lt;br&gt;back to GATT node via mesh" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="460" y="970" width="215" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="resp2" value="&lt;b&gt;custom model STATUS&lt;/b&gt;&lt;br&gt;GATT node receives response" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="65" y="940" width="250" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="resp3" value="&lt;b&gt;gatt notify sensor data&lt;/b&gt;&lt;br&gt;GATT notify → Main computer&lt;br&gt;Chunks if &amp;gt;20 bytes ('+' prefix)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="790" width="240" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="er2" value="VND STATUS" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;fontColor=#FFFFFF;fontSize=9;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="resp1" target="resp2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="er3" value="GATT notify" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4f9ede;fontColor=#FFFFFF;fontSize=9;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="resp2" target="resp3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="er_down1" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.995;entryY=0.323;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="out_ramp" target="resp1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1243" y="990"/>
+                            <mxPoint x="675" y="990"/>
+                            <mxPoint x="675" y="991"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="er_local" value="direct GATT notify&lt;br&gt;(no mesh hop)" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4f9ede;fontColor=#FFFFFF;fontSize=9;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;startArrow=none;" parent="1" source="d_vnd" target="resp3" edge="1">
+                    <mxGeometry x="-0.3362" y="-14" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="leg_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#141424;strokeColor=#333355;arcSize=8;" parent="1" vertex="1">
+                    <mxGeometry x="660" y="1090" width="700" height="95" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg_t" value="COLOUR LEGEND" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#888888;fontSize=11;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="675" y="1098" width="200" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="l1" value="GATT / ESP32 firmware layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="675" y="1123" width="200" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="l2" value="Routing decisions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a2200;strokeColor=#f0a500;fontColor=#f0de00;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="885" y="1123" width="145" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="l3" value="Mesh send / receive" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a1010;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1040" y="1123" width="150" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="l4" value="Target node execution" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#ffffff;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1200" y="1123" width="150" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4f9ede;fontColor=#aaaaaa;fontSize=9;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=none;" edge="1" parent="1" source="local_direct" target="d_vnd">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="735" y="310" as="sourcePoint"/>
+                        <mxPoint x="210" y="990" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="725" y="459"/>
+                            <mxPoint x="705" y="459"/>
+                            <mxPoint x="570" y="460"/>
+                            <mxPoint x="570" y="669"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="d_vnd" value="Vendor model&lt;br&gt;bound?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#3a2200;strokeColor=#f0a500;fontColor=#f0de00;fontSize=11;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="327.5" y="669" width="180" height="90" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="qF72oP5cRtW77HQqX9-E" name="Page-1">
+        <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1050" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <!-- BACKGROUND -->
+                <mxCell id="bg" value="" style="rounded=0;fillColor=#1e1e2e;strokeColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="0" y="0" width="1600" height="1050" as="geometry"/>
+                </mxCell>
+                <!-- TITLE -->
+                <mxCell id="title" value="How a Command Reaches a Node" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d2038;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=22;fontStyle=1;align=center;arcSize=8;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="14" width="1520" height="52" as="geometry"/>
+                </mxCell>
+                <mxCell id="sub" value="Pi 5 → GATT Node → BLE Mesh → Target Node → executes command → sensor data back to Pi 5" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontColor=#666699;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="70" width="1520" height="22" as="geometry"/>
+                </mxCell>
+                <!-- ============================= -->
+                <!-- STEP 1: Pi 5 sends a command  -->
+                <!-- ============================= -->
+                <mxCell id="s1_label" value="① Pi 5 sends a command" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#4f9ede;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+                    <mxGeometry x="200" y="102" width="400" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="pi5" value="&lt;b&gt;Pi 5 Gateway&lt;/b&gt;&lt;br&gt;Sends a command string over BLE&lt;br&gt;&lt;br&gt;Format:  &lt;b&gt;NODE_ID : COMMAND : VALUE&lt;/b&gt;&lt;br&gt;&lt;br&gt;Examples:&lt;br&gt;  &amp;quot;1:DUTY:50&amp;quot;  →  set node 1 to 50% brightness&lt;br&gt;  &amp;quot;2:READ&amp;quot;  →  read sensor data from node 2&lt;br&gt;  &amp;quot;ALL:RAMP&amp;quot;  →  ramp test on every node&lt;br&gt;  &amp;quot;1:STOP&amp;quot;  →  turn node 1 off" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=12;arcSize=15;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="200" y="130" width="400" height="155" as="geometry"/>
+                </mxCell>
+                <!-- ============================================= -->
+                <!-- STEP 2: GATT node receives it                 -->
+                <!-- ============================================= -->
+                <mxCell id="s2_label" value="② The GATT Node receives it" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#4f9ede;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+                    <mxGeometry x="200" y="300" width="400" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="gatt_node" value="&lt;b&gt;GATT Node  (the BLE bridge)&lt;/b&gt;&lt;br&gt;Receives the command and parses it.&lt;br&gt;Decides where to send it." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=12;arcSize=15;" vertex="1" parent="1">
+                    <mxGeometry x="200" y="328" width="400" height="72" as="geometry"/>
+                </mxCell>
+                <!-- Arrow: Pi 5 → GATT node -->
+                <mxCell id="e_pi_gatt" value="BLE GATT write" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4f9ede;fontColor=#aaaaaa;fontSize=10;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="pi5" target="gatt_node" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- GATT flexible note -->
+                <mxCell id="gatt_flex" value="&lt;b&gt;🔄 Any node can be the GATT Node&lt;/b&gt;&lt;br&gt;All nodes run identical firmware.&lt;br&gt;If this node loses power, Pi 5&lt;br&gt;reconnects to another node automatically." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2a1040;strokeColor=#9c6fde;fontColor=#ddbbff;fontSize=11;arcSize=12;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="660" y="328" width="280" height="95" as="geometry"/>
+                </mxCell>
+                <!-- ============================================= -->
+                <!-- STEP 3: Routing — 3 cases                     -->
+                <!-- ============================================= -->
+                <mxCell id="s3_label" value="③ Where does the command go?" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#f0a500;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+                    <mxGeometry x="100" y="432" width="500" height="24" as="geometry"/>
+                </mxCell>
+                <!-- Case A: targeting self -->
+                <mxCell id="case_a_bg" value="" style="rounded=1;fillColor=#1a2a0a;strokeColor=#4caf50;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="100" y="462" width="320" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="case_a_t" value="CASE A — Targeting this node" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#4caf50;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+                    <mxGeometry x="115" y="470" width="290" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="case_a" value="Command is for the GATT node itself.&lt;br&gt;Runs locally — no mesh hop needed.&lt;br&gt;Reply goes straight back to Pi 5." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#ccffcc;fontSize=11;" vertex="1" parent="1">
+                    <mxGeometry x="115" y="492" width="290" height="72" as="geometry"/>
+                </mxCell>
+                <!-- Case B: targeting one other node -->
+                <mxCell id="case_b_bg" value="" style="rounded=1;fillColor=#1a1a3a;strokeColor=#e05c5c;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="460" y="462" width="320" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="case_b_t" value="CASE B — Targeting a single node" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#e05c5c;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+                    <mxGeometry x="475" y="470" width="290" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="case_b" value="Command sent over BLE Mesh to that&lt;br&gt;specific node's unicast address.&lt;br&gt;That node runs it and replies via mesh." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#ffcccc;fontSize=11;" vertex="1" parent="1">
+                    <mxGeometry x="475" y="492" width="290" height="72" as="geometry"/>
+                </mxCell>
+                <!-- Case C: ALL nodes -->
+                <mxCell id="case_c_bg" value="" style="rounded=1;fillColor=#2a1a0a;strokeColor=#f0a500;arcSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="820" y="462" width="340" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="case_c_t" value="CASE C — Targeting ALL nodes" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#f0a500;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+                    <mxGeometry x="835" y="470" width="310" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="case_c" value="GATT node runs command locally first,&lt;br&gt;then broadcasts to group 0xC000.&lt;br&gt;All other nodes run it too." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#ffdda0;fontSize=11;" vertex="1" parent="1">
+                    <mxGeometry x="835" y="492" width="310" height="72" as="geometry"/>
+                </mxCell>
+                <!-- Arrows: GATT node → 3 cases -->
+                <mxCell id="e_ga" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="gatt_node" target="case_a_bg" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_gb" value="BLE Mesh" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;fontColor=#aaaaaa;fontSize=9;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="gatt_node" target="case_b_bg" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_gc" value="BLE Mesh broadcast" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#f0a500;fontColor=#aaaaaa;fontSize=9;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="gatt_node" target="case_c_bg" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- ============================================= -->
+                <!-- STEP 4: Node executes                         -->
+                <!-- ============================================= -->
+                <mxCell id="s4_label" value="④ The node executes the command" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#4caf50;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+                    <mxGeometry x="100" y="596" width="500" height="24" as="geometry"/>
+                </mxCell>
+                <!-- Command grid -->
+                <!-- READ -->
+                <mxCell id="cmd_read" value="&lt;b&gt;READ&lt;/b&gt;&lt;br&gt;No change to load.&lt;br&gt;Returns: voltage, current,&lt;br&gt;power, duty %" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#ccffcc;fontSize=11;arcSize=15;" vertex="1" parent="1">
+                    <mxGeometry x="100" y="626" width="190" height="88" as="geometry"/>
+                </mxCell>
+                <!-- DUTY:50 / 50 -->
+                <mxCell id="cmd_duty" value="&lt;b&gt;DUTY:50  or just  50&lt;/b&gt;&lt;br&gt;Sets brightness to 50%.&lt;br&gt;Returns sensor reading&lt;br&gt;at the new level." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#ccffcc;fontSize=11;arcSize=15;" vertex="1" parent="1">
+                    <mxGeometry x="305" y="626" width="190" height="88" as="geometry"/>
+                </mxCell>
+                <!-- STOP -->
+                <mxCell id="cmd_stop" value="&lt;b&gt;STOP  /  0&lt;/b&gt;&lt;br&gt;Turns load fully OFF.&lt;br&gt;Returns sensor reading&lt;br&gt;(should read 0 A)." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a1010;strokeColor=#e05c5c;fontColor=#ffcccc;fontSize=11;arcSize=15;" vertex="1" parent="1">
+                    <mxGeometry x="510" y="626" width="190" height="88" as="geometry"/>
+                </mxCell>
+                <!-- 100 / ON -->
+                <mxCell id="cmd_on" value="&lt;b&gt;100  /  ON&lt;/b&gt;&lt;br&gt;Turns load fully ON.&lt;br&gt;Returns sensor reading&lt;br&gt;at full brightness." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#ccffcc;fontSize=11;arcSize=15;" vertex="1" parent="1">
+                    <mxGeometry x="715" y="626" width="190" height="88" as="geometry"/>
+                </mxCell>
+                <!-- RAMP -->
+                <mxCell id="cmd_ramp" value="&lt;b&gt;RAMP&lt;/b&gt;&lt;br&gt;Steps through duty levels:&lt;br&gt;0% → 25% → 50% → 75% → 100%&lt;br&gt;(500 ms each), then resets to 0%.&lt;br&gt;Returns final sensor reading." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a1a3a;strokeColor=#9c6fde;fontColor=#ddbbff;fontSize=11;arcSize=15;" vertex="1" parent="1">
+                    <mxGeometry x="920" y="626" width="240" height="88" as="geometry"/>
+                </mxCell>
+                <!-- ============================================= -->
+                <!-- STEP 5: Response back                         -->
+                <!-- ============================================= -->
+                <mxCell id="s5_label" value="⑤ Sensor data returns to Pi 5" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#4f9ede;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+                    <mxGeometry x="100" y="736" width="500" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="resp" value="&lt;b&gt;Response format:&lt;/b&gt;  NODE1:DATA:D:50%,V:12.003V,I:500.00mA,P:6001.5mW&lt;br&gt;&lt;br&gt;Target node sends data back over BLE Mesh → GATT node receives → forwards to Pi 5 via BLE GATT notify" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=12;arcSize=12;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="100" y="764" width="760" height="72" as="geometry"/>
+                </mxCell>
+                <!-- Arrows: commands → response -->
+                <mxCell id="e_r1" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.1;entryY=0;entryDx=0;entryDy=0;" edge="1" source="cmd_read" target="resp" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_r2" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.3;entryY=0;entryDx=0;entryDy=0;" edge="1" source="cmd_duty" target="resp" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_r3" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="cmd_stop" target="resp" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_r4" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.7;entryY=0;entryDx=0;entryDy=0;" edge="1" source="cmd_on" target="resp" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_r5" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#9c6fde;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.9;entryY=0;entryDx=0;entryDy=0;" edge="1" source="cmd_ramp" target="resp" parent="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- Arrow: resp → pi5 (closes the loop) -->
+                <mxCell id="e_back" value="back to Pi 5" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4f9ede;fontColor=#aaaaaa;fontSize=10;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" source="resp" target="pi5" parent="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="60" y="800"/>
+                            <mxPoint x="60" y="207"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <!-- ============================================= -->
+                <!-- RIGHT SIDE PANEL: Notes                       -->
+                <!-- ============================================= -->
+                <!-- GATT node note box already placed above -->
+                <!-- Fallback note -->
+                <mxCell id="fallback_note" value="&lt;b&gt;⚠ Fallback mode&lt;/b&gt;&lt;br&gt;If the node isn't fully provisioned yet,&lt;br&gt;can only send basic ON/OFF.&lt;br&gt;No duty control, no sensor data." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2a1a00;strokeColor=#f0a500;fontColor=#ffdda0;fontSize=11;arcSize=12;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="1220" y="626" width="270" height="88" as="geometry"/>
+                </mxCell>
+                <!-- Chunking note -->
+                <mxCell id="chunk_note" value="&lt;b&gt;📦 Long responses are chunked&lt;/b&gt;&lt;br&gt;If the response is &gt;20 bytes,&lt;br&gt;it's split into pieces. Pi 5&lt;br&gt;reassembles them automatically." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d1a2e;strokeColor=#4f9ede;fontColor=#aaaaee;fontSize=11;arcSize=12;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="1220" y="764" width="270" height="88" as="geometry"/>
+                </mxCell>
+                <!-- LEGEND -->
+                <mxCell id="leg_bg" value="" style="rounded=1;fillColor=#141424;strokeColor=#333355;arcSize=8;" vertex="1" parent="1">
+                    <mxGeometry x="100" y="870" width="900" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="l1" value="Pi 5 / GATT layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="115" y="884" width="155" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="l2" value="Node executes — ON" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#ccffcc;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="280" y="884" width="155" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="l3" value="Node executes — OFF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a1010;strokeColor=#e05c5c;fontColor=#ffcccc;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="445" y="884" width="155" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="l4" value="Ramp sequence" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a1a3a;strokeColor=#9c6fde;fontColor=#ddbbff;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="610" y="884" width="155" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="l5" value="Warnings / fallback" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2a1a00;strokeColor=#f0a500;fontColor=#ffdda0;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="775" y="884" width="155" height="28" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

@@ -1,0 +1,235 @@
+<mxfile host="65bd71144e">
+    <diagram id="WLpyHm3Vr1cjpzfyLSDs" name="Page-1">
+        <mxGraphModel dx="1360" dy="653" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1e1e2e;strokeColor=none;" parent="1" vertex="1">
+                    <mxGeometry width="1800" height="1100" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="PWM Load Drive Circuit — Signal Chain &amp; Inversion Logic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d2038;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=20;fontStyle=1;align=center;arcSize=8;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="12" width="1700" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="ESP32 GPIO5 → R2 → Q1 VN2222LL (inverter + level shifter) → R1/R3 → Q2 MTA30N06E (power switch) → 12V @ 1A Load" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontColor=#888888;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="66" width="1700" height="26" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="① HARDWARE SIGNAL CHAIN" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4f9ede;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="102" width="380" height="26" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" value="&lt;b&gt;set_duty(N)&lt;/b&gt;&lt;br&gt;User API  (0–100%)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="140" width="160" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" value="&lt;b&gt;Firmware Inversion&lt;/b&gt;&lt;br&gt;duty_val = MAX − (N × MAX / 100)&lt;br&gt;100% → duty_val = 0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="265" y="136" width="230" height="63" as="geometry"/>
+                </mxCell>
+                <mxCell id="14" value="&lt;b&gt;ESP32-C6  LEDC&lt;/b&gt;&lt;br&gt;GPIO5 — 1 kHz PWM&lt;br&gt;13-bit (8192 steps)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="558" y="136" width="180" height="63" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4f9ede;" parent="1" source="10" target="12" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4f9ede;" parent="1" source="12" target="14" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" value="3.3V PWM signal" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4f9ede;fontColor=#aaaaaa;fontSize=9;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="14" target="16" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="16" value="&lt;b&gt;R2  4.7kΩ&lt;/b&gt;&lt;br&gt;Gate protection / current limiter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#5c3000;strokeColor=#f0a500;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="558" y="262" width="180" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" value="gate drive" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#f0a500;fontColor=#aaaaaa;fontSize=9;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="16" target="18" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="18" value="&lt;b&gt;Q1  VN2222LL&lt;/b&gt;&lt;br&gt;Small-signal N-MOSFET&lt;br&gt;&lt;i&gt;Signal Inverter · 3.3V→12V Level Shifter&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#5c3000;strokeColor=#f0a500;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="535" y="375" width="226" height="78" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5" value="INVERTED output&lt;br&gt;HIGH↔LOW flipped" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#f0a500;fontColor=#aaaaaa;fontSize=9;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="18" target="30" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="19" value="&lt;b&gt;12V RAIL&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2a1a00;strokeColor=#f0a500;fontColor=#f0a500;fontSize=11;fontStyle=1;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="55" y="503" width="110" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" value="&lt;b&gt;R1  100kΩ&lt;/b&gt;&lt;br&gt;12V pull-up · failsafe gate bleed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#5c3000;strokeColor=#f0a500;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="220" y="495" width="195" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="e6" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#f0a500;" parent="1" source="19" target="21" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#f0a500;" parent="1" source="21" target="30" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="30" value="⊙  SWITCH NODE&lt;br&gt;Q1 Drain / Q2 Gate Drive" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2a2a00;strokeColor=#f0de00;fontColor=#f0de00;fontSize=11;fontStyle=1;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="460" y="503" width="215" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="e8" value="0V or 12V" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;fontColor=#aaaaaa;fontSize=9;" parent="1" source="30" target="25" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="25" value="&lt;b&gt;R3  51kΩ&lt;/b&gt;&lt;br&gt;Gate snubber / slew rate control" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#5c1a1a;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="738" y="495" width="180" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="e9" value="Q2 gate drive" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;fontColor=#aaaaaa;fontSize=9;" parent="1" source="25" target="27" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="27" value="&lt;b&gt;Q2  MTA30N06E&lt;/b&gt;&lt;br&gt;Power N-Channel MOSFET&lt;br&gt;30A / 60V rating&lt;br&gt;&lt;i&gt;Power Switch — handles 12V @ 1A&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#5c1a1a;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="978" y="455" width="215" height="98" as="geometry"/>
+                </mxCell>
+                <mxCell id="33" value="&lt;b&gt;12V RAIL&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2a1a00;strokeColor=#f0a500;fontColor=#f0a500;fontSize=11;fontStyle=1;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="1020" y="272" width="110" height="38" as="geometry"/>
+                </mxCell>
+                <mxCell id="29" value="&lt;b&gt;LOAD&lt;/b&gt;&lt;br&gt;12V @ 1A  (LED bulb etc.)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#5c1a1a;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="1000" y="335" width="170" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="e10" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;" parent="1" source="33" target="29" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e11" value="12V @ 1A" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;fontColor=#aaaaaa;fontSize=9;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="29" target="27" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="31" value="GND  ⏚" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a1a2e;strokeColor=#555577;fontColor=#888888;fontSize=12;fontStyle=1;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="1028" y="588" width="110" height="36" as="geometry"/>
+                </mxCell>
+                <mxCell id="e12" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#555577;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="27" target="31" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="32" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;&lt;b style=&quot;&quot;&gt;WHY INVERT?&lt;/b&gt;  Q1 (common-source) naturally flips the signal:&lt;br&gt;GPIO HIGH → Q1 ON → Q2 Gate=0V → Load OFF.&lt;br&gt;Firmware compensates: &lt;b style=&quot;&quot;&gt;duty_val = MAX − (N × MAX / 100)&lt;/b&gt;&lt;br&gt;so set_duty(100) = 💡 Bright and set_duty(0) = ⚫ Off&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2a1040;strokeColor=#9c6fde;fontColor=#ddbbff;fontSize=10;arcSize=10;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="30" y="260" width="480" height="190" as="geometry"/>
+                </mxCell>
+                <mxCell id="s2h" value="② LOGIC STATE REFERENCE" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4caf50;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1215" y="102" width="555" height="26" as="geometry"/>
+                </mxCell>
+                <mxCell id="on_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d2d0d;strokeColor=#4caf50;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1215" y="138" width="555" height="148" as="geometry"/>
+                </mxCell>
+                <mxCell id="on_title" value="💡  LIGHT ON — set_duty(100)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4caf50;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1228" y="146" width="530" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="on1" value="&lt;b&gt;duty_val=0&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a4a1a;strokeColor=#4caf50;fontColor=#ffffff;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1228" y="182" width="100" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="on2" value="&lt;b&gt;GPIO5=LOW&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a4a1a;strokeColor=#4caf50;fontColor=#ffffff;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1348" y="182" width="100" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="on3" value="&lt;b&gt;Q1 OFF&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a4a1a;strokeColor=#4caf50;fontColor=#ffffff;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1470" y="182" width="80" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="on4" value="&lt;b&gt;Q2 Gate→12V&lt;/b&gt;&lt;br&gt;via R1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a4a1a;strokeColor=#4caf50;fontColor=#ffffff;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1228" y="232" width="115" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="on5" value="&lt;b&gt;Q2 ON&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a4a1a;strokeColor=#4caf50;fontColor=#ffffff;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1363" y="232" width="80" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="on6" value="&lt;b&gt;💡 LOAD ON&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a5a1a;strokeColor=#4caf50;fontColor=#ffffff;fontSize=12;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1463" y="228" width="118" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="eon1" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;" parent="1" source="on1" target="on2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eon2" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;" parent="1" source="on2" target="on3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eon3" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;" parent="1" source="on4" target="on5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eon4" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;" parent="1" source="on5" target="on6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="off_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2d0d0d;strokeColor=#e05c5c;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1215" y="302" width="555" height="148" as="geometry"/>
+                </mxCell>
+                <mxCell id="off_title" value="⚫  LIGHT OFF — set_duty(0)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#e05c5c;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1228" y="310" width="530" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="off1" value="&lt;b&gt;duty_val=8191&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4a1a1a;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1228" y="347" width="115" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="off2" value="&lt;b&gt;GPIO5=HIGH&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4a1a1a;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1360" y="347" width="105" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="off3" value="&lt;b&gt;Q1 ON&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4a1a1a;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1478" y="347" width="80" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="off4" value="&lt;b&gt;Q2 Gate→0V&lt;/b&gt;&lt;br&gt;Q1 pulls GND" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4a1a1a;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1228" y="397" width="115" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="off5" value="&lt;b&gt;Q2 OFF&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4a1a1a;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1360" y="397" width="85" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="off6" value="&lt;b&gt;⚫ LOAD OFF&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#5a1a1a;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=12;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1460" y="393" width="118" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="eoff1" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;" parent="1" source="off1" target="off2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eoff2" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;" parent="1" source="off2" target="off3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eoff3" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;" parent="1" source="off4" target="off5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eoff4" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;" parent="1" source="off5" target="off6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="s3h" value="③ FAILSAFE — ESP32 UNPLUGGED" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4caf50;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1215" y="466" width="555" height="26" as="geometry"/>
+                </mxCell>
+                <mxCell id="fs1" value="⚡  ESP32 loses power / unplugged" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a2800;strokeColor=#f0a500;fontColor=#f0a500;fontSize=11;fontStyle=1;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="1280" y="500" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="fs2" value="GPIO5 loses drive → floats to ~0V" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a2800;strokeColor=#f0a500;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="1280" y="568" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="fs3" value="Q1 Gate = 0V  →  Q1 turns OFF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a2800;strokeColor=#f0a500;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="1280" y="636" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="fs4" value="R1 (100kΩ) too weak to sustain Q2 gate charge&lt;br&gt;R3 bleeds Q2 gate capacitance to GND" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2a1040;strokeColor=#9c6fde;fontColor=#ddbbff;fontSize=10;arcSize=10;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="1280" y="704" width="360" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="fs5" value="Q2 Gate = 0V  →  Q2 turns OFF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a2800;strokeColor=#f0a500;fontColor=#ffffff;fontSize=11;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="1280" y="783" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="fs6" value="✅  LOAD TURNS OFF — Failsafe Active" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#4caf50;fontSize=14;fontStyle=1;arcSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="1258" y="855" width="404" height="52" as="geometry"/>
+                </mxCell>
+                <mxCell id="efs1" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#f0a500;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="fs1" target="fs2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="efs2" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#f0a500;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="fs2" target="fs3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="efs3" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#f0a500;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="fs3" target="fs4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="efs4" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#9c6fde;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="fs4" target="fs5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="efs5" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="fs5" target="fs6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#141424;strokeColor=#333355;arcSize=8;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="670" width="430" height="175" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg_title" value="COLOUR LEGEND" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#888888;fontSize=11;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="65" y="678" width="200" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg1" value="Firmware / ESP32" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="65" y="706" width="170" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg2" value="Small-signal stage (Q1, R1, R2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#5c3000;strokeColor=#f0a500;fontColor=#ffffff;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="245" y="706" width="220" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg3" value="Power stage (Q2, R3, LOAD)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#5c1a1a;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="65" y="746" width="220" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg4" value="Failsafe / Safe state" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#4caf50;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="295" y="746" width="170" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg5" value="Annotations / Notes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2a1040;strokeColor=#9c6fde;fontColor=#ddbbff;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="65" y="786" width="400" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg6" value="Switch Node (Q1 Drain / Q2 Gate drive junction)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2a2a00;strokeColor=#f0de00;fontColor=#f0de00;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="65" y="826" width="400" height="30" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

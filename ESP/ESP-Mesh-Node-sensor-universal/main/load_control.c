@@ -6,7 +6,7 @@
 static const char *TAG = "LOAD_CTRL";
 
 // ============== PWM Configuration ==============
-#define PWM_GPIO GPIO_NUM_5              // Wire to 4.7k then 2N2222 base / MOSFET gate
+#define PWM_GPIO GPIO_NUM_5              // Wire to 4.7k then VN2222LL gate
 #define PWM_FREQ_HZ 1000                 // 1kHz (same as Pico code)
 #define PWM_RESOLUTION LEDC_TIMER_13_BIT // 8192 steps
 #define PWM_MAX_DUTY 8191                // (2^13 - 1)
@@ -32,7 +32,7 @@ void pwm_init(void) {
       .channel = LEDC_CHANNEL_0,
       .timer_sel = LEDC_TIMER_0,
       .gpio_num = PWM_GPIO,
-      .duty = 0, // LOW = load OFF at boot
+      .duty = PWM_MAX_DUTY, // HIGH = load OFF at boot (inverted circuit)
       .hpoint = 0,
   };
   ESP_ERROR_CHECK(ledc_channel_config(&channel));
@@ -47,8 +47,9 @@ void set_duty(int percent) {
     percent = 0;
   if (percent > 100)
     percent = 100;
-  // Direct: 0% = fully OFF, 100% = fully ON
-  uint32_t duty_val = ((uint32_t)percent * PWM_MAX_DUTY) / 100;
+  // Inverted: VN2222LL circuit is active-low, so invert the duty
+  // 100% input = light ON (PWM duty = 0), 0% input = light OFF (PWM duty = max)
+  uint32_t duty_val = PWM_MAX_DUTY - ((uint32_t)percent * PWM_MAX_DUTY) / 100;
   ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty_val);
   ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
   current_duty = percent;

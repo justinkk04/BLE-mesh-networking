@@ -1,0 +1,35 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "esp32c6-debug",
+      "displayName": "ESP32-C6 Debug",
+      "description": "Build using the ESP-IDF toolchain for ESP32-C6",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "toolchainFile": "$env{IDF_PATH}/tools/cmake/toolchain-esp32c6.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "IDF_TARGET": "esp32c6"
+      },
+      "environment": {
+        "IDF_TARGET": "esp32c6"
+      }
+    },
+    {
+      "name": "esp32c6-release",
+      "displayName": "ESP32-C6 Release",
+      "description": "Release build using the ESP-IDF toolchain for ESP32-C6",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "toolchainFile": "$env{IDF_PATH}/tools/cmake/toolchain-esp32c6.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "IDF_TARGET": "esp32c6"
+      },
+      "environment": {
+        "IDF_TARGET": "esp32c6"
+      }
+    }
+  ]
+}

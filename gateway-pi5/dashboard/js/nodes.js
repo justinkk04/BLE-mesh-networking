@@ -132,15 +132,14 @@ function renderCard(id, data) {
         flashElement(currEl);
     }
 
-    // Power bar
-    const maxScale = 500;
-    let pct = Math.min(((data.power || 0) / maxScale) * 100, 100);
+    // Power/duty bar — width represents duty cycle percentage (0–100%)
+    const duty = data.duty || 0;
     const bar = document.getElementById(`bar-${id}`);
-    bar.style.width = `${pct}%`;
+    bar.style.width = `${duty}%`;
 
-    // Color the bar based on power level
-    if (pct > 80) bar.style.background = `linear-gradient(90deg, var(--accent-orange), var(--accent-red))`;
-    else if (pct > 50) bar.style.background = `linear-gradient(90deg, var(--accent-primary), var(--accent-orange))`;
+    // Color the bar based on duty level
+    if (duty > 80) bar.style.background = `linear-gradient(90deg, var(--accent-orange), var(--accent-red))`;
+    else if (duty > 50) bar.style.background = `linear-gradient(90deg, var(--accent-primary), var(--accent-orange))`;
     else bar.style.background = `linear-gradient(90deg, var(--accent-primary), var(--accent-cyan))`;
 }
 

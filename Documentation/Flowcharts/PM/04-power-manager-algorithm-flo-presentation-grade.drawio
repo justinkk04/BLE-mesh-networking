@@ -1,0 +1,456 @@
+<mxfile host="65bd71144e" scale="3" border="0">
+    <diagram id="pm04-pres" name="Power Manager Lifecycle">
+        <mxGraphModel dx="815" dy="523" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1200" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="bg" value="" style="rounded=0;fillColor=#1e1e2e;strokeColor=none;" parent="1" vertex="1">
+                    <mxGeometry width="1900" height="1200" as="geometry"/>
+                </mxCell>
+                <mxCell id="title" value="Power Manager — Equilibrium Algorithm" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d2038;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=17;fontStyle=1;align=center;arcSize=6;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="12" width="1800" height="46" as="geometry"/>
+                </mxCell>
+                <mxCell id="subtitle" value="PowerMesh DC Monitor  ·  Adaptive Duty-Cycle Balancing Across BLE Mesh Nodes" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontColor=#7799bb;fontSize=11;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="60" width="1800" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg_bg" value="" style="rounded=1;fillColor=#141424;strokeColor=#333355;arcSize=8;" parent="1" vertex="1">
+                    <mxGeometry x="1130" y="82" width="720" height="36" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg_t" value="COLOR KEY:" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#888888;fontSize=9;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1138" y="90" width="68" height="16" as="geometry"/>
+                </mxCell>
+                <mxCell id="l1" value="User / Gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=8;" parent="1" vertex="1">
+                    <mxGeometry x="1210" y="91" width="118" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="l2" value="Poll / Monitoring" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#ccffcc;fontSize=8;" parent="1" vertex="1">
+                    <mxGeometry x="1336" y="91" width="118" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="l3" value="Decision Gate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a2200;strokeColor=#f0a500;fontColor=#f0de00;fontSize=8;" parent="1" vertex="1">
+                    <mxGeometry x="1462" y="91" width="118" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="l4" value="BLE Duty Commands" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e0808;strokeColor=#c04040;fontColor=#ffcccc;fontSize=8;" parent="1" vertex="1">
+                    <mxGeometry x="1588" y="91" width="135" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="l5" value="Balance Logic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a0a30;strokeColor=#9c6fde;fontColor=#ddbbff;fontSize=8;" parent="1" vertex="1">
+                    <mxGeometry x="1731" y="91" width="112" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="c1h" value="① ENTRY — User Enables Power Manager" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#4f9ede;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="55" y="82" width="340" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="entry1" value="&lt;b&gt;User Sets Power Budget&lt;/b&gt;&lt;br&gt;e.g. &lt;tt&gt;pm 6000&lt;/tt&gt; → Threshold: 6,000 mW&lt;br&gt;Working Budget = Threshold − 500 mW headroom" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="55" y="106" width="275" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_e1e2" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4f9ede;" parent="1" source="entry1" target="entry2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="entry2" value="&lt;b&gt;First time enabling?&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#3a2200;strokeColor=#f0a500;fontColor=#f0de00;fontSize=10;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="97" y="192" width="190" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="freeze" value="&lt;b&gt;Snapshot Node Ceiling&lt;/b&gt;&lt;br&gt;Current duty → user ceiling for all nodes&lt;br&gt;&lt;i&gt;(locks target_duty per node)&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a0a30;strokeColor=#9c6fde;fontColor=#ddbbff;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="188" width="220" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_freeze" value="Yes" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#f0a500;fontColor=#ffffff;fontSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;labelBackgroundColor=#000000;" parent="1" source="entry2" target="freeze" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_freeze_ff" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#9c6fde;exitX=0.5;exitY=1;entryX=1;entryY=0.5;" parent="1" source="freeze" target="force_flag" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="440" y="288"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="force_flag" value="&lt;b&gt;Schedule Immediate Re-evaluation&lt;/b&gt;&lt;br&gt;Forces a balance check on the very next cycle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2a1a00;strokeColor=#f0a500;fontColor=#ffdda0;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="55" y="278" width="275" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_e2ff" value="No / Update" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#f0a500;fontColor=#ffffff;fontSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#000000;" parent="1" source="entry2" target="force_flag" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="kick_poll" value="&lt;b&gt;Launch Background Poll Worker&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#ccffcc;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="55" y="340" width="275" height="36" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_ffkp" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;" parent="1" source="force_flag" target="kick_poll" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c2h" value="② POLL LOOP — Periodic Node Monitoring" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#4caf50;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="55" y="386" width="340" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="boot_d" value="&lt;b&gt;Initial node discovery&lt;br&gt;needed?&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#3a2200;strokeColor=#f0a500;fontColor=#f0de00;fontSize=10;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="97" y="410" width="190" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_kpbd" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;" parent="1" source="kick_poll" target="boot_d" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="bootstrap" value="&lt;b&gt;Discover Active Nodes&lt;/b&gt;&lt;br&gt;Probe mesh addresses 1..N — Send READ&lt;br&gt;Register all nodes that respond" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#ccffcc;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="349" y="410" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_boot_yes" value="Yes (first run)" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;fontColor=#ffffff;fontSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;labelBackgroundColor=#000000;" parent="1" source="boot_d" target="bootstrap" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_boot_merge" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;exitX=0.5;exitY=1;entryX=1.002;entryY=0.517;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="bootstrap" target="poll_send" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="440" y="516"/>
+                            <mxPoint x="325" y="516"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="poll_send" value="&lt;b&gt;Broadcast READ to All Nodes&lt;/b&gt;&lt;br&gt;Group READ request → all registered nodes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#ccffcc;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="65" y="492" width="260" height="46" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_bdps" value="No" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;fontColor=#ffffff;fontSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#000000;" parent="1" source="boot_d" target="poll_send" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="sensor_note" value="&lt;b&gt;⚡ Real-Time Sensor Hook (Async)&lt;/b&gt;&lt;br&gt;&lt;i&gt;Fires on every BLE packet received — outside poll loop&lt;/i&gt;&lt;br&gt;&lt;br&gt;Updates node state: duty, V, I, P, last-seen timestamp&lt;br&gt;Does NOT auto-modify the user duty ceiling" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a0a30;strokeColor=#9c6fde;fontColor=#ddbbff;fontSize=9;arcSize=10;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="419" y="556" width="136" height="134" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_sensor_wr" value="feeds node data" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#9c6fde;fontColor=#ddbbff;fontSize=8;exitX=0;exitY=0.5;entryX=1;entryY=0.5;dashed=1;labelBackgroundColor=#1e1e2e;" parent="1" source="sensor_note" target="wait_resp" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="wait_resp" value="&lt;b&gt;Collect Sensor Replies&lt;/b&gt; (up to 4s)&lt;br&gt;Wait for all online nodes to report in" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#ccffcc;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="65" y="556" width="260" height="46" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_pswr" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;" parent="1" source="poll_send" target="wait_resp" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mark_stale" value="&lt;b&gt;Flag Unresponsive Nodes&lt;/b&gt;&lt;br&gt;Silent for &gt; 45s → marked offline, excluded from balancing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#ccffcc;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="65" y="620" width="260" height="46" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_wrms" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;" parent="1" source="wait_resp" target="mark_stale" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="breathe" value="&lt;b&gt;Brief Relay Gap&lt;/b&gt; — 1s cooldown (lets BLE mesh settle)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#ccffcc;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="65" y="683" width="260" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_msbr" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;" parent="1" source="mark_stale" target="breathe" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eval_box" value="&lt;b&gt;→ Run Power Balance Evaluation&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2a1a00;strokeColor=#f0a500;fontColor=#ffdda0;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="65" y="733" width="260" height="36" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_breval" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;" parent="1" source="breathe" target="eval_box" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="sleep_poll" value="&lt;b&gt;Sleep 3 Seconds&lt;/b&gt; → repeat poll loop ↑" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#ccffcc;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="65" y="786" width="260" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_evslp" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;" parent="1" source="eval_box" target="sleep_poll" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_loop" value="loop" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;fontColor=#ffffff;fontSize=9;exitX=0;exitY=0.5;entryX=0;entryY=0.5;labelBackgroundColor=#1e1e2e;" parent="1" source="sleep_poll" target="poll_send" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="28" y="803"/>
+                            <mxPoint x="28" y="515"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="c3h" value="③ EVALUATE &amp; ADJUST — 7-Gate Balance Decision Chain" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#f0a500;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="560" y="82" width="540" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_eval_g1" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#f0a500;exitX=1;exitY=0.5;entryX=0;entryY=0.5;dashed=1;" parent="1" source="eval_box" target="g1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="585" y="751"/>
+                            <mxPoint x="585" y="130"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="g1" value="&lt;b&gt;System inactive&lt;br&gt;or mid-adjustment?&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#3a2200;strokeColor=#f0a500;fontColor=#f0de00;fontSize=10;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="622" y="108" width="192" height="62" as="geometry"/>
+                </mxCell>
+                <mxCell id="skip1" value="↩ Stand By" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a1010;strokeColor=#e05c5c;fontColor=#ffaaaa;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="874" y="123" width="104" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_g1s" value="Yes — skip" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;labelBackgroundColor=#000000;" parent="1" source="g1" target="skip1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_skip1_ret" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;dashed=1;exitX=0.5;exitY=1;entryX=1;entryY=0.5;" parent="1" source="skip1" target="sleep_poll" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="926" y="180"/>
+                            <mxPoint x="1094" y="180"/>
+                            <mxPoint x="1094" y="803"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="g2" value="&lt;b&gt;Forced re-evaluation&lt;br&gt;triggered?&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#3a2200;strokeColor=#f0a500;fontColor=#f0de00;fontSize=10;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="622" y="200" width="192" height="62" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_g1g2" value="Continue" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;fontColor=#ffffff;fontSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#000000;" parent="1" source="g1" target="g2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="forced_note" value="&lt;b&gt;Forced Re-evaluation Active&lt;/b&gt;&lt;br&gt;Clear flag · Reset duty estimates from latest&lt;br&gt;sensor readings&lt;br&gt;&lt;i&gt;→ Bypass cooldown &amp; tolerance gates&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2a1a00;strokeColor=#f0a500;fontColor=#ffdda0;fontSize=10;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="866" y="196" width="210" height="72" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_g2fn" value="Yes" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#f0a500;fontColor=#ffffff;fontSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;labelBackgroundColor=#000000;" parent="1" source="g2" target="forced_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_fn_dir" value="→ jump to balance" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#f0a500;fontColor=#ffffff;fontSize=8;exitX=0.5;exitY=1;entryX=0.6;entryY=0;labelBackgroundColor=#000000;dashed=1;" parent="1" source="forced_note" target="dir_box" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="971" y="300"/>
+                            <mxPoint x="971" y="744"/>
+                            <mxPoint x="743" y="744"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="g3" value="&lt;b&gt;Adjustment cooldown&lt;br&gt;satisfied? (≥ 5 seconds)&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#3a2200;strokeColor=#f0a500;fontColor=#f0de00;fontSize=10;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="622" y="293" width="192" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_g2g3" value="No → normal check" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;fontColor=#ffffff;fontSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#000000;" parent="1" source="g2" target="g3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="skip3" value="↩ Too Soon" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a1010;strokeColor=#e05c5c;fontColor=#ffaaaa;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="874" y="308" width="104" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_g3s" value="Not yet" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;labelBackgroundColor=#000000;" parent="1" source="g3" target="skip3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_skip3_ret" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;dashed=1;exitX=0.5;exitY=1;entryX=1;entryY=0.5;" parent="1" source="skip3" target="sleep_poll" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="926" y="360"/>
+                            <mxPoint x="1094" y="360"/>
+                            <mxPoint x="1094" y="803"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="g4" value="&lt;b&gt;Any nodes&lt;br&gt;responding?&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#3a2200;strokeColor=#f0a500;fontColor=#f0de00;fontSize=10;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="622" y="385" width="192" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_g3g4" value="Yes — elapsed" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;fontColor=#ffffff;fontSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#000000;" parent="1" source="g3" target="g4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="skip4" value="↩ No Nodes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a1010;strokeColor=#e05c5c;fontColor=#ffaaaa;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="874" y="399" width="104" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_g4s" value="None online" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;labelBackgroundColor=#000000;" parent="1" source="g4" target="skip4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_skip4_ret" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;dashed=1;exitX=0.5;exitY=1;entryX=1;entryY=0.5;" parent="1" source="skip4" target="sleep_poll" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="926" y="447"/>
+                            <mxPoint x="1094" y="447"/>
+                            <mxPoint x="1094" y="803"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="g5" value="&lt;b&gt;Power budget&lt;br&gt;available? (&gt; 0 mW)&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#3a2200;strokeColor=#f0a500;fontColor=#f0de00;fontSize=10;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="622" y="473" width="192" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_g4g5" value="Yes" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;fontColor=#ffffff;fontSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#000000;" parent="1" source="g4" target="g5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="skip5" value="↩ No Budget" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a1010;strokeColor=#e05c5c;fontColor=#ffaaaa;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="874" y="487" width="104" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_g5s" value="Zero / negative" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;labelBackgroundColor=#000000;" parent="1" source="g5" target="skip5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_skip5_ret" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;dashed=1;exitX=0.5;exitY=1;entryX=1;entryY=0.5;" parent="1" source="skip5" target="sleep_poll" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="926" y="534"/>
+                            <mxPoint x="1094" y="534"/>
+                            <mxPoint x="1094" y="803"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="g6" value="&lt;b&gt;Total draw within&lt;br&gt;±5% of target budget?&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#3a2200;strokeColor=#f0a500;fontColor=#f0de00;fontSize=10;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="622" y="561" width="192" height="62" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_g5g6" value="Yes — available" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;fontColor=#ffffff;fontSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#000000;" parent="1" source="g5" target="g6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="skip6" value="↩ In Balance ✓" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a1010;strokeColor=#e05c5c;fontColor=#ffaaaa;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="864" y="576" width="120" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_g6s" value="Within tolerance" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;labelBackgroundColor=#000000;" parent="1" source="g6" target="skip6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_skip6_ret" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;dashed=1;exitX=0.5;exitY=1;entryX=1;entryY=0.5;" parent="1" source="skip6" target="sleep_poll" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="924" y="620"/>
+                            <mxPoint x="1094" y="620"/>
+                            <mxPoint x="1094" y="803"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="g7" value="&lt;b&gt;All nodes maxed out,&lt;br&gt;synced &amp; under budget?&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#3a2200;strokeColor=#f0a500;fontColor=#f0de00;fontSize=10;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="622" y="652" width="192" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_g6g7" value="Outside tolerance" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;fontColor=#ffffff;fontSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#000000;" parent="1" source="g6" target="g7" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="skip7" value="↩ Optimal ✓" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3a1010;strokeColor=#e05c5c;fontColor=#ffaaaa;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="864" y="667" width="110" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_g7s" value="Already optimal" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;labelBackgroundColor=#000000;" parent="1" source="g7" target="skip7" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_skip7_ret" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;dashed=1;exitX=0.5;exitY=1;entryX=1;entryY=0.5;" parent="1" source="skip7" target="sleep_poll" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="919" y="712"/>
+                            <mxPoint x="1094" y="712"/>
+                            <mxPoint x="1094" y="803"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="dir_box" value="&lt;b&gt;Determine Adjustment Direction&lt;/b&gt;&lt;br&gt;Total draw &lt; Budget → ▲ Increase Node Load&lt;br&gt;Total draw ≥ Budget → ▼ Reduce Node Load" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#ccffcc;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="614" y="748" width="210" height="52" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_g7dir" value="Needs adjustment" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;fontColor=#ffffff;fontSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#000000;" parent="1" source="g7" target="dir_box" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c4h" value="&lt;font color=&quot;#9933ff&quot;&gt;④ BALANCING — Distribution Strategy&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#e05c5c;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="387" y="833" width="380" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="pri_d" value="&lt;b&gt;Priority node&lt;br&gt;configured?&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#3a2200;strokeColor=#f0a500;fontColor=#f0de00;fontSize=10;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="634" y="838" width="186" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dir_pri" value="proceed" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;fontColor=#ffffff;fontSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#000000;" parent="1" source="dir_box" target="pri_d" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="bal_equal" value="&lt;b&gt;Branch A — Equal Share Distribution&lt;/b&gt;&lt;br&gt;&lt;i&gt;No priority node configured&lt;/i&gt;&lt;br&gt;&lt;br&gt;Power Share per Node = Budget ÷ N&lt;br&gt;Every online node receives equal allocation&lt;br&gt;&lt;br&gt;→ Adjust each node's duty cycle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a0a30;strokeColor=#9c6fde;fontColor=#ddbbff;fontSize=10;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="400" y="938" width="250" height="105" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_pri_no" value="No" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#9c6fde;fontColor=#ffffff;fontSize=9;exitX=0;exitY=0.5;entryX=0.5;entryY=0;labelBackgroundColor=#000000;" parent="1" source="pri_d" target="bal_equal" edge="1">
+                    <mxGeometry x="0.35" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="bal_pri" value="&lt;b&gt;Branch B — Priority-Weighted Distribution&lt;/b&gt;&lt;br&gt;&lt;i&gt;Priority node receives 2× the standard share&lt;/i&gt;&lt;br&gt;&lt;br&gt;Total Shares = 2 + (N − 1)&lt;br&gt;Priority budget = 2 / Total × Budget&lt;br&gt;Others split the remaining budget equally&lt;br&gt;Surplus from ceiling is redistributed&lt;br&gt;&lt;br&gt;→ Adjust each node's duty cycle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a0a30;strokeColor=#9c6fde;fontColor=#ddbbff;fontSize=10;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="750" y="930" width="263" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_pri_yes" value="Yes" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#9c6fde;fontColor=#ffffff;fontSize=9;exitX=1;exitY=0.5;entryX=0.5;entryY=0;labelBackgroundColor=#000000;" parent="1" source="pri_d" target="bal_pri" edge="1">
+                    <mxGeometry x="0.43" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="nudge_panel" value="" style="rounded=1;fillColor=#0f0f1a;strokeColor=#555566;arcSize=4;" parent="1" vertex="1">
+                    <mxGeometry x="1233" y="188" width="540" height="560" as="geometry"/>
+                </mxCell>
+                <mxCell id="c5h" value="⑤ ADJUST NODE — Per-Node Duty Cycle Command" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#e05c5c;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1241" y="193" width="528" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="nudge_entry" value="&lt;b&gt;Adjust Node Duty Cycle&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;Called once per node with its allocated power share&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a2a1a;strokeColor=#e05c5c;fontColor=#ffcccc;fontSize=10;arcSize=10;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1253" y="223" width="380" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_eq_nudge" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#9c6fde;fontColor=#ddbbff;fontSize=9;exitX=0.5;exitY=1;entryX=0.001;entryY=0.635;labelBackgroundColor=#0f0f1a;exitDx=0;exitDy=0;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="bal_equal" target="nudge_entry" edge="1">
+                    <mxGeometry x="0.0283" y="-50" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="526" y="1043"/>
+                            <mxPoint x="526" y="1141"/>
+                            <mxPoint x="1132" y="1141"/>
+                            <mxPoint x="1132" y="251"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_pr_nudge" value="for each node" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#9c6fde;fontColor=#ddbbff;fontSize=9;exitX=0.5;exitY=1;entryX=0.002;entryY=0.63;labelBackgroundColor=#0f0f1a;exitDx=0;exitDy=0;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="bal_pri" target="nudge_entry" edge="1">
+                    <mxGeometry x="-0.2056" y="-1" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="882" y="1140"/>
+                            <mxPoint x="1132" y="1140"/>
+                            <mxPoint x="1132" y="251"/>
+                            <mxPoint x="1254" y="251"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="n1" value="&lt;b&gt;Estimate Node Efficiency&lt;/b&gt;&lt;br&gt;Has usage history → Efficiency = Power Reading ÷ Current Duty %&lt;br&gt;No history → average from peer node readings&lt;br&gt;Fallback default: 50 mW per % duty cycle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e0808;strokeColor=#c04040;fontColor=#ffcccc;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="1253" y="283" width="380" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_entry_n1" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;" parent="1" source="nudge_entry" target="n1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="n2" value="&lt;b&gt;Calculate Target Duty Cycle&lt;/b&gt;&lt;br&gt;Target Duty = Allocated Power Share ÷ Efficiency" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e0808;strokeColor=#c04040;fontColor=#ffcccc;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="1253" y="358" width="380" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_n1n2" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;" parent="1" source="n1" target="n2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="n3" value="&lt;b&gt;Clamp to Safe Range&lt;/b&gt; [0% — User Ceiling]&lt;br&gt;Never command a duty cycle above the user-configured cap" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e0808;strokeColor=#c04040;fontColor=#ffcccc;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="1253" y="418" width="380" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_n2n3" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;" parent="1" source="n2" target="n3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="n4" value="&lt;b&gt;Duty cycle&lt;br&gt;unchanged?&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#1e1400;strokeColor=#f0a500;fontColor=#f0de00;fontSize=10;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1323" y="480" width="185" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_n3n4" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;" parent="1" source="n3" target="n4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="noop" value="No action needed&lt;br&gt;&lt;i&gt;Node already at correct duty&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#555555;fontColor=#888888;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1577" y="491" width="186" height="38" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_n4noop" value="Yes — no change" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#888888;fontColor=#ffffff;fontSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.5;labelBackgroundColor=#000000;" parent="1" source="n4" target="noop" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_noop_la" value="still log" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#888888;fontColor=#ffffff;fontSize=8;exitX=0.5;exitY=1;entryX=1;entryY=0.5;dashed=1;labelBackgroundColor=#000000;" parent="1" source="noop" target="last_adj" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1670" y="573"/>
+                            <mxPoint x="1670" y="689"/>
+                            <mxPoint x="1545" y="689"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="n5" value="&lt;b&gt;Send DUTY Command via BLE Mesh&lt;/b&gt;&lt;br&gt;Transmit new duty percentage to node over mesh network" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e0808;strokeColor=#c04040;fontColor=#ffcccc;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="1283" y="556" width="340" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_n4n5" value="No — changed" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;fontColor=#ffffff;fontSize=9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#0f0f1a;" parent="1" source="n4" target="n5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="n6" value="&lt;b&gt;Record New Commanded Duty&lt;/b&gt;&lt;br&gt;Next poll cycle self-corrects if BLE packet was lost" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e0808;strokeColor=#c04040;fontColor=#ffcccc;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="1253" y="616" width="380" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_n5n6" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e05c5c;" parent="1" source="n5" target="n6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="last_adj" value="&lt;b&gt;Record Adjustment Timestamp&lt;/b&gt;&lt;br&gt;Broadcast live power status update to WebSocket dashboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="1283" y="676" width="340" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_n6_la" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4f9ede;" parent="1" source="n6" target="last_adj" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_la_poll" value="return to poll" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=8;exitX=0.5;exitY=1;entryX=1;entryY=0.5;dashed=1;labelBackgroundColor=#000000;" parent="1" source="last_adj" target="sleep_poll" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1451" y="720"/>
+                            <mxPoint x="1451" y="803"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="c6h" value="⑥ SHUTDOWN — Disable Power Manager" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#4f9ede;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="55" y="860" width="340" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="dis1" value="&lt;b&gt;Clear Threshold · Stop Polling&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="55" y="888" width="260" height="36" as="geometry"/>
+                </mxCell>
+                <mxCell id="dis2" value="&lt;b&gt;Wait 2 Seconds&lt;/b&gt;&lt;br&gt;Allow in-flight BLE commands to settle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="55" y="940" width="260" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_d1d2" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4f9ede;" parent="1" source="dis1" target="dis2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="dis3" value="&lt;b&gt;Restore All Nodes to User Ceiling&lt;/b&gt;&lt;br&gt;Reset each node's commanded duty back to the saved cap" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a3a5c;strokeColor=#4f9ede;fontColor=#ffffff;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="55" y="1000" width="260" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_d2d3" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4f9ede;" parent="1" source="dis2" target="dis3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="dis4" value="&lt;b&gt;Resume Background Web Monitoring&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0d3a0d;strokeColor=#4caf50;fontColor=#ccffcc;fontSize=10;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="55" y="1060" width="260" height="36" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_d3d4" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#4caf50;" parent="1" source="dis3" target="dis4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

@@ -5,6 +5,7 @@ and command routing to mesh nodes via the ESP32-C6 GATT gateway.
 """
 
 import asyncio
+import re
 import threading
 import time
 from datetime import datetime
@@ -159,6 +160,89 @@ class DCMonitorGateway:
 
         return nodes
 
+    def _handle_sensor_segment(self, segment: str, timestamp: str):
+        """Parse and process a single NODE<id>:DATA:<payload> segment."""
+        if ":DATA:" not in segment:
+            return
+
+        parts = segment.split(":DATA:", 1)
+        node_tag = parts[0]    # e.g. "NODE0"
+        payload = parts[1]     # e.g. "D:50%,V:12.345V,I:1234.5MA,P:15234.5MW"
+
+        # Parse sensor values
+        sensor_match = SENSOR_RE.match(payload)
+        node_match = NODE_ID_RE.match(node_tag)
+
+        if sensor_match and node_match:
+            node_id = node_match.group(1)
+            duty = int(sensor_match.group(1))
+            voltage = float(sensor_match.group(2))
+            current = float(sensor_match.group(3))
+            power = float(sensor_match.group(4))
+
+            # Track this node as known (it actually exists and responded)
+            self.known_nodes.add(node_id)
+
+            # Store latest reading for web API (independent of PM)
+            self._last_readings[node_id] = {
+                "duty": duty, "voltage": voltage,
+                "current": current, "power": power,
+                "last_seen": time.time(),
+            }
+
+            # Feed PowerManager
+            if self._power_manager:
+                self._power_manager.on_sensor_data(
+                    node_id, duty, voltage, current, power)
+
+            # Signal that this node responded (unblocks event-driven pacing)
+            evt = self._node_events.get(node_id)
+            if evt:
+                evt.set()
+
+            # Determine if this is a user-triggered response
+            is_user_response = False
+            if node_id in self._pending_user_nodes:
+                self._pending_user_nodes.discard(node_id)
+                is_user_response = True
+            elif "*" in self._pending_user_nodes:
+                is_user_response = True
+
+            # Web dashboard: broadcast sensor data + record to DB
+            if self._web_enabled:
+                try:
+                    import web_server
+                    import db
+                    loop = self.ble_thread._loop if self.ble_thread else None
+                    if loop:
+                        asyncio.run_coroutine_threadsafe(
+                            web_server.broadcast_sensor_data(node_id, {
+                                "duty": duty, "voltage": voltage,
+                                "current": current, "power": power,
+                                "last_seen": time.time(),
+                            }, user_triggered=is_user_response),
+                            loop
+                        )
+                    db.insert_reading(node_id, duty, voltage, current, power)
+                except Exception:
+                    pass
+
+            # Post to TUI for UI update (always use call_from_thread — we're on bleak's thread)
+            if self.app and _HAS_TEXTUAL:
+                try:
+                    msg = self.app.SensorDataMsg(
+                        node_id, duty, voltage, current, power,
+                        f"[{timestamp}] {node_tag} >> {payload}",
+                        is_user_response=is_user_response
+                    )
+                    self.app.call_from_thread(self.app.post_message, msg)
+                except Exception as e:
+                    print(f"  [{timestamp}] {node_tag} >> {payload}  [post error: {e}]")
+            elif is_user_response or self._poll_show_log:
+                print(f"[{timestamp}] {node_tag} >> {payload}")
+        else:
+            self.log(f"[{timestamp}] {node_tag} >> {payload}", _from_thread=True)
+
     def notification_handler(self, characteristic: BleakGATTCharacteristic, data: bytearray):
         """Handle incoming notifications from GATT gateway.
 
@@ -184,87 +268,18 @@ class DCMonitorGateway:
 
         timestamp = datetime.now().strftime("%H:%M:%S")
 
-        # Parse vendor model responses: NODE<id>:DATA:<sensor payload>
+        # Multiple mesh nodes can reply in a single BLE notification,
+        # concatenated without delimiter: "NODE0:DATA:...P:1234.5mWNODE2:DATA:..."
+        # Split on NODE<id>:DATA: boundaries and process each individually.
         if ":DATA:" in decoded:
-            parts = decoded.split(":DATA:", 1)
-            node_tag = parts[0]  # e.g. "NODE0"
-            payload = parts[1]   # e.g. "D:50%,V:12.345V,I:1234.5MA,P:15234.5MW"
+            # Split keeping the NODE tag: ["NODE0:DATA:...", "NODE2:DATA:..."]
+            segments = re.split(r'(?=NODE\d+:DATA:)', decoded)
+            segments = [s for s in segments if s.strip()]
+            for segment in segments:
+                self._handle_sensor_segment(segment.strip(), timestamp)
+            return
 
-            # Parse sensor values
-            sensor_match = SENSOR_RE.match(payload)
-            node_match = NODE_ID_RE.match(node_tag)
-
-            if sensor_match and node_match:
-                node_id = node_match.group(1)
-                duty = int(sensor_match.group(1))
-                voltage = float(sensor_match.group(2))
-                current = float(sensor_match.group(3))
-                power = float(sensor_match.group(4))
-
-                # Track this node as known (it actually exists and responded)
-                self.known_nodes.add(node_id)
-
-                # Store latest reading for web API (independent of PM)
-                self._last_readings[node_id] = {
-                    "duty": duty, "voltage": voltage,
-                    "current": current, "power": power,
-                    "last_seen": time.time(),
-                }
-
-                # Feed PowerManager
-                if self._power_manager:
-                    self._power_manager.on_sensor_data(
-                        node_id, duty, voltage, current, power)
-
-                # Signal that this node responded (unblocks event-driven pacing)
-                evt = self._node_events.get(node_id)
-                if evt:
-                    evt.set()
-
-                # Determine if this is a user-triggered response
-                is_user_response = False
-                if node_id in self._pending_user_nodes:
-                    self._pending_user_nodes.discard(node_id)
-                    is_user_response = True
-                elif "*" in self._pending_user_nodes:
-                    is_user_response = True
-
-                # Web dashboard: broadcast sensor data + record to DB
-                if self._web_enabled:
-                    try:
-                        import web_server
-                        import db
-                        loop = self.ble_thread._loop if self.ble_thread else None
-                        if loop:
-                            asyncio.run_coroutine_threadsafe(
-                                web_server.broadcast_sensor_data(node_id, {
-                                    "duty": duty, "voltage": voltage,
-                                    "current": current, "power": power,
-                                    "last_seen": time.time(),
-                                }, user_triggered=is_user_response),
-                                loop
-                            )
-                        db.insert_reading(node_id, duty, voltage, current, power)
-                    except Exception:
-                        pass
-
-                # Post to TUI for UI update (always use call_from_thread — we're on bleak's thread)
-                if self.app and _HAS_TEXTUAL:
-                    try:
-                        msg = self.app.SensorDataMsg(
-                            node_id, duty, voltage, current, power,
-                            f"[{timestamp}] {node_tag} >> {payload}",
-                            is_user_response=is_user_response
-                        )
-                        self.app.call_from_thread(self.app.post_message, msg)
-                    except Exception as e:
-                        print(f"  [{timestamp}] {node_tag} >> {payload}  [post error: {e}]")
-                elif is_user_response or self._poll_show_log:
-                    print(f"[{timestamp}] {node_tag} >> {payload}")
-            else:
-                self.log(f"[{timestamp}] {node_tag} >> {payload}", _from_thread=True)
-
-        elif decoded.startswith("ERROR:"):
+        if decoded.startswith("ERROR:"):
             # Suppress MESH_TIMEOUT during PM polling — it's just discovery probes
             pm = self._power_manager
             if pm and pm._polling:

@@ -518,12 +518,29 @@ class PowerManager:
         return change
 
     async def _balance_proportional(self, nodes: dict, budget: float):
-        """Equal power shares: each node gets budget/N."""
-        n = len(nodes)
-        share_mw = budget / n
+        """Equal power shares: each node gets budget/N.
+
+        Nodes with a disconnected load (power ~0 despite duty > 0) are skipped
+        and their share is redistributed to the nodes that can actually use it.
+        """
+        # Detect dead-load nodes: duty commanded but drawing nothing.
+        # Threshold: commanded or sensor duty > 5% yet power < 10mW.
+        dead_load = {
+            nid: ns for nid, ns in nodes.items()
+            if ns.power < 10 and (ns.commanded_duty or ns.duty) > 5
+        }
+        active = {nid: ns for nid, ns in nodes.items() if nid not in dead_load}
+
+        if dead_load:
+            self.gateway.log(
+                f"[POWER] Dead-load node(s) {list(dead_load.keys())} excluded "
+                f"from share — redistributing budget to {list(active.keys())}")
+
+        share_nodes = active if active else nodes
+        share_mw = budget / len(share_nodes)
 
         changes = []
-        for nid, ns in sorted(nodes.items(), key=lambda x: int(x[0]) if x[0].isdigit() else 999):
+        for nid, ns in sorted(share_nodes.items(), key=lambda x: int(x[0]) if x[0].isdigit() else 999):
             change = await self._nudge_node(nid, ns, share_mw, nodes)
             if change:
                 changes.append(change)
@@ -572,7 +589,21 @@ class PowerManager:
         else:
             remaining = budget - priority_budget
 
-        non_pri_share = remaining / len(non_priority) if non_priority else 0
+        # Exclude dead-load non-priority nodes: duty > 0 but power ≈ 0 (load disconnected).
+        # Their would-be share stays in `remaining` and gets divided among active nodes.
+        dead_non_pri = {
+            nid: ns for nid, ns in non_priority.items()
+            if ns.power < 10 and (ns.commanded_duty or ns.duty) > 5
+        }
+        active_non_pri = {nid: ns for nid, ns in non_priority.items()
+                          if nid not in dead_non_pri}
+        if dead_non_pri:
+            self.gateway.log(
+                f"[POWER] Dead-load non-priority node(s) {list(dead_non_pri.keys())} "
+                f"excluded — redistributing budget to {list(active_non_pri.keys())}")
+
+        share_non_pri_nodes = active_non_pri if active_non_pri else non_priority
+        non_pri_share = remaining / len(share_non_pri_nodes) if share_non_pri_nodes else 0
 
         changes = []
         # Nudge priority node
@@ -581,8 +612,8 @@ class PowerManager:
         if change:
             changes.append(change + "(pri)")
 
-        # Nudge non-priority nodes
-        for nid, ns in sorted(non_priority.items(), key=lambda x: int(x[0]) if x[0].isdigit() else 999):
+        # Nudge active non-priority nodes only
+        for nid, ns in sorted(share_non_pri_nodes.items(), key=lambda x: int(x[0]) if x[0].isdigit() else 999):
             change = await self._nudge_node(nid, ns, non_pri_share, nodes)
             if change:
                 changes.append(change)

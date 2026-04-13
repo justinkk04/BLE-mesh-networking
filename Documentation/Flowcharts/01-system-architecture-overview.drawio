@@ -1,0 +1,141 @@
+<mxfile host="65bd71144e">
+    <diagram id="sysarch" name="System Architecture Overview">
+        <mxGraphModel dx="1092" dy="649" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="67" value="&lt;b style=&quot;font-size:9px&quot;&gt;I2C&lt;/b&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;strokeColor=#f57f17;fontSize=9;endArrow=block;startArrow=block;endFill=1;startFill=1;labelBackgroundColor=#ffffff;fontColor=#000000;" parent="1" source="30" target="55" edge="1">
+                    <mxGeometry x="-0.3939" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="705" y="710"/>
+                            <mxPoint x="705" y="873"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2" value="v0.7.1 — Universal Nodes + Web Dashboard" style="text;html=1;fontSize=11;fontStyle=2;fontColor=#999999;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="5" width="350" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="20" value="&lt;font color=&quot;#ffffff&quot;&gt;BLE Mesh Network&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 4;fillColor=none;strokeColor=#999999;strokeWidth=2;fontStyle=1;fontSize=14;verticalAlign=top;align=left;spacingLeft=15;spacingTop=8;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="460" width="1230" height="620" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="Web Browser" style="swimlane;fontStyle=1;align=center;startSize=24;collapsible=0;rounded=1;fillColor=#e1d5e7;strokeColor=#9673a6;swimlaneLine=0;html=1;fontSize=12;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="30" width="340" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="index.html • D3.js topology • Chart.js telemetry" style="text;html=1;align=center;fontSize=9;fontColor=#FFFFFF;" parent="3" vertex="1">
+                    <mxGeometry x="10" y="28" width="320" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" value="Raspberry Pi 5 Gateway" style="swimlane;fontStyle=1;align=center;startSize=28;collapsible=0;rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneLine=0;html=1;fontSize=13;strokeWidth=1.5;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="30" y="160" width="1180" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="&lt;b&gt;gateway.py&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px&quot;&gt;Entry Point&lt;br&gt;Mode Selector&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#fff;strokeColor=#6c8ebf;arcSize=15;fontColor=#000000;" parent="10" vertex="1">
+                    <mxGeometry x="25" y="40" width="140" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" value="&lt;b&gt;dc_gateway.py&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px&quot;&gt;BLE GATT Client (bleak)&lt;br&gt;Notification Handler&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#fff;strokeColor=#6c8ebf;arcSize=15;fontColor=#000000;" parent="10" vertex="1">
+                    <mxGeometry x="185" y="40" width="155" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="13" value="&lt;b&gt;ble_thread.py&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px&quot;&gt;Dedicated Async&lt;br&gt;Event Loop for BLE&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#fff;strokeColor=#6c8ebf;arcSize=15;fontColor=#000000;" parent="10" vertex="1">
+                    <mxGeometry x="360" y="40" width="145" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="14" value="&lt;b&gt;tui_app.py&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px&quot;&gt;Textual Terminal UI&lt;br&gt;DataTable / RichLog&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#fff;strokeColor=#6c8ebf;arcSize=15;fontColor=#000000;" parent="10" vertex="1">
+                    <mxGeometry x="525" y="40" width="145" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" value="&lt;b&gt;web_server.py&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px&quot;&gt;FastAPI + WebSocket&lt;br&gt;REST API + Push&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#fff;strokeColor=#6c8ebf;arcSize=15;fontColor=#000000;" parent="10" vertex="1">
+                    <mxGeometry x="25" y="120" width="150" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="16" value="&lt;b&gt;power_manager.py&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px&quot;&gt;Equilibrium Power&lt;br&gt;Balancer&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#fff;strokeColor=#6c8ebf;arcSize=15;fontColor=#000000;" parent="10" vertex="1">
+                    <mxGeometry x="195" y="120" width="155" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="17" value="&lt;b&gt;db.py&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px&quot;&gt;SQLite Time-Series&lt;br&gt;Storage&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#fff;strokeColor=#6c8ebf;arcSize=15;fontColor=#000000;" parent="10" vertex="1">
+                    <mxGeometry x="370" y="120" width="135" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="30" value="ESP32-C6 Universal Node (Connected to Pi 5)" style="swimlane;fontStyle=1;align=center;startSize=26;collapsible=0;rounded=1;fillColor=#c8e6c9;strokeColor=#43a047;swimlaneLine=0;html=1;fontSize=12;strokeWidth=2.5;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="70" y="505" width="1100" height="175" as="geometry"/>
+                </mxCell>
+                <mxCell id="31" value="&lt;b&gt;main.c&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px&quot;&gt;Boot Orchestrator&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#fff;strokeColor=#82b366;arcSize=15;fontColor=#000000;" parent="30" vertex="1">
+                    <mxGeometry x="20" y="35" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="32" value="&lt;b&gt;mesh_node.c&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px&quot;&gt;BLE Mesh Stack&lt;br&gt;Vendor Server+Client&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#fff;strokeColor=#82b366;arcSize=15;fontColor=#000000;" parent="30" vertex="1">
+                    <mxGeometry x="155" y="35" width="140" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="33" value="&lt;b&gt;gatt_service.c&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px&quot;&gt;NimBLE GATT 0xDC01&lt;br&gt;Sensor+Command Chars&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#fff;strokeColor=#82b366;arcSize=15;fontColor=#000000;" parent="30" vertex="1">
+                    <mxGeometry x="310" y="35" width="150" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="34" value="&lt;b&gt;command_parser.c&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px&quot;&gt;Parse NODE_ID:CMD:VAL&lt;br&gt;Route local vs mesh&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#fff;strokeColor=#82b366;arcSize=15;fontColor=#000000;" parent="30" vertex="1">
+                    <mxGeometry x="475" y="35" width="155" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="35" value="&lt;b&gt;command.c&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px&quot;&gt;Execute Commands&lt;br&gt;read/duty/ramp/stop&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#fff;strokeColor=#82b366;arcSize=15;fontColor=#000000;" parent="30" vertex="1">
+                    <mxGeometry x="20" y="100" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="36" value="&lt;b&gt;sensor.c&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px&quot;&gt;INA260 I2C Driver&lt;br&gt;V, I, P Reading&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#fff;strokeColor=#82b366;arcSize=15;fontColor=#000000;" parent="30" vertex="1">
+                    <mxGeometry x="165" y="100" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="37" value="&lt;b&gt;load_control.c&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:8px&quot;&gt;LEDC PWM Output&lt;br&gt;Duty Cycle Control&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#fff;strokeColor=#82b366;arcSize=15;fontColor=#000000;" parent="30" vertex="1">
+                    <mxGeometry x="310" y="100" width="135" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="40" value="&lt;b&gt;ESP32-C6 Remote Universal Node(s)&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;Sensor + PWM + Mesh (not connected to Pi 5 directly)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=1.5;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="810" width="460" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="50" value="&lt;b&gt;ESP32-C6 Provisioner&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;Auto-provision (UUID 0xdddd)&lt;br&gt;Unicast addr, AppKey, model bind, group sub (0xC000)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;fillColor=#ffe6cc;strokeColor=#d6b656;strokeWidth=1.5;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="130" y="930" width="420" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="55" value="&lt;b&gt;INA260 Sensor&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;Voltage / Current / Power&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="610" y="742.5" width="170" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="56" value="&lt;b&gt;Load Circuit&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;MOSFET + PWM Driver&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="860" y="770" width="170" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="58" value="Note: Messages &gt;20 bytes are chunked&#10;with '+' prefix on continuation chunks.&#10;Pi 5 reassembles." style="shape=note;size=15;whiteSpace=wrap;html=0;fillColor=#ffffc0;strokeColor=#c0c000;fontSize=8;align=left;spacingLeft=5;" parent="1" vertex="1">
+                    <mxGeometry x="900" y="420" width="210" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="60" value="&lt;font style=&quot;font-size:9px&quot;&gt;&lt;b&gt;HTTP REST + WebSocket&lt;/b&gt;&lt;br&gt;/api/state, /api/history&lt;br&gt;/api/command, ws:///ws&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=2;strokeColor=#9673a6;fontSize=9;endArrow=block;startArrow=block;endFill=1;startFill=1;labelBackgroundColor=#ffffff;fontColor=#000000;" parent="1" source="3" target="10" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="61" value="&lt;font style=&quot;font-size:9px&quot;&gt;&lt;b&gt;BLE GATT (Service 0xDC01)&lt;/b&gt;&lt;br&gt;Write commands / Notify sensor data&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=2;strokeColor=#1565c0;fontSize=9;endArrow=block;startArrow=block;endFill=1;startFill=1;labelBackgroundColor=#ffffff;fontColor=#000000;" parent="1" source="10" target="30" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="62" value="&lt;font style=&quot;font-size:9px&quot;&gt;&lt;b&gt;BLE Mesh Vendor Model&lt;/b&gt;&lt;br&gt;VND_OP_SEND / VND_OP_STATUS&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;strokeColor=#2e7d32;fontSize=9;endArrow=block;startArrow=block;endFill=1;startFill=1;labelBackgroundColor=#ffffff;fontColor=#000000;" parent="1" target="40" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="330" y="680" as="sourcePoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="63" value="&lt;font style=&quot;font-size:8px&quot;&gt;&lt;b&gt;Self-Addressing&lt;/b&gt;&lt;br&gt;target == self → process locally&lt;br&gt;(no mesh round-trip)&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;strokeColor=#ef6c00;dashed=1;fontSize=8;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=1;entryY=0.7;entryDx=0;entryDy=0;labelBackgroundColor=#ffffff;fontColor=#000000;" parent="1" source="30" target="30" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1210" y="558"/>
+                            <mxPoint x="1210" y="628"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="64" value="&lt;font style=&quot;font-size:8px&quot;&gt;&lt;b&gt;BLE Mesh Group (0xC000)&lt;/b&gt;&lt;br&gt;ALL:READ broadcasts to all nodes&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;strokeColor=#2e7d32;dashed=1;dashPattern=4 4;fontSize=8;endArrow=block;endFill=1;entryX=0.8;entryY=0;entryDx=0;entryDy=0;labelBackgroundColor=#ffffff;fontColor=#000000;" parent="1" target="40" edge="1">
+                    <mxGeometry x="-0.0769" y="12" relative="1" as="geometry">
+                        <mxPoint x="468" y="680" as="sourcePoint"/>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="65" value="&lt;font style=&quot;font-size:9px&quot;&gt;&lt;b&gt;BLE Mesh Provisioning&lt;/b&gt;&lt;br&gt;PB-ADV / PB-GATT (one-time setup)&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;strokeColor=#e65100;fontSize=9;endArrow=block;endFill=1;dashed=1;labelBackgroundColor=#ffffff;fontColor=#000000;" parent="1" source="50" target="20" edge="1">
+                    <mxGeometry x="-0.0214" y="14" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="290" y="840"/>
+                            <mxPoint x="510" y="840"/>
+                            <mxPoint x="510" y="940"/>
+                            <mxPoint x="620" y="940"/>
+                        </Array>
+                        <mxPoint x="-4" y="-10" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="68" value="&lt;b style=&quot;font-size:9px&quot;&gt;LEDC PWM&lt;/b&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;strokeColor=#f57f17;fontSize=9;endArrow=block;endFill=1;labelBackgroundColor=#ffffff;fontColor=#000000;" parent="1" source="30" target="56" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="935" y="710"/>
+                            <mxPoint x="935" y="873"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="72" value="Note: Messages &amp;gt;20 bytes are chunked&#10;with '+' prefix on continuation chunks.&#10;Pi 5 reassembles." style="shape=note;size=15;whiteSpace=wrap;html=0;fillColor=#ffffc0;strokeColor=#c0c000;fontSize=8;align=left;spacingLeft=5;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="900" y="420" width="210" height="55" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

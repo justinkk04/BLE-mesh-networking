@@ -1,0 +1,3 @@
+dependencies:
+  example_init:
+    path: C:/Users/Justi/esp/v5.1.6/esp-idf/examples/bluetooth/esp_ble_mesh/common_components/example_init
