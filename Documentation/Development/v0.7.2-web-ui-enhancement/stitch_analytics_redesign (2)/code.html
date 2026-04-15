@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-bright": "#18181b",
+              "secondary-fixed-dim": "#71717a",
+              "on-primary-fixed": "#2e1065",
+              "inverse-surface": "#fafafa",
+              "tertiary": "#34d399",
+              "on-tertiary": "#001a12",
+              "on-secondary-container": "#a1a1aa",
+              "on-surface-variant": "#a1a1aa",
+              "surface-dim": "#0c0c0f",
+              "primary-container": "#7c3aed",
+              "on-tertiary-container": "#bbf7d0",
+              "on-primary-fixed-variant": "#5b21b6",
+              "secondary-fixed": "#a1a1aa",
+              "on-surface": "#fafafa",
+              "background": "#09090b",
+              "on-secondary-fixed": "#18181b",
+              "on-tertiary-fixed": "#003318",
+              "on-secondary": "#09090b",
+              "error": "#ef4444",
+              "surface-container-low": "#0f0f12",
+              "surface-container": "#121215",
+              "inverse-on-surface": "#09090b",
+              "secondary-container": "#27272a",
+              "on-primary": "#0a0012",
+              "primary-fixed-dim": "#c4b5fd",
+              "on-tertiary-fixed-variant": "#047857",
+              "surface-container-high": "#18181b",
+              "inverse-primary": "#5b21b6",
+              "on-primary-container": "#ede9fe",
+              "outline-variant": "#27272a",
+              "tertiary-container": "#065f46",
+              "surface-container-lowest": "#09090b",
+              "tertiary-fixed-dim": "#6ee7b7",
+              "surface-container-highest": "#1e1e22",
+              "outline": "#52525b",
+              "error-container": "#3b1111",
+              "tertiary-fixed": "#bbf7d0",
+              "on-error-container": "#fca5a5",
+              "secondary": "#71717a",
+              "on-error": "#1a0000",
+              "primary-fixed": "#ede9fe",
+              "surface-tint": "#a78bfa",
+              "primary": "#a78bfa",
+              "surface-variant": "#18181b",
+              "on-secondary-fixed-variant": "#3f3f46",
+              "on-background": "#fafafa",
+              "surface": "#0c0c0f"
+            },
+            fontFamily: {
+              "headline": ["Geist"],
+              "body": ["Geist"],
+              "label": ["Geist"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Geist', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen selection:bg-primary selection:text-on-primary">
+<!-- TopNavBar Component -->
+<header class="flex justify-between items-center w-full px-6 h-16 bg-[#09090b] sticky top-0 z-50 border-b border-[#27272a] font-['Geist'] tracking-tight antialiased text-[#fafafa]">
+<div class="flex items-center gap-8">
+<span class="text-lg font-bold tracking-tighter text-[#fafafa]">DC Monitor Mesh</span>
+<nav class="hidden md:flex items-center gap-6 h-full">
+<a class="text-[#a1a1aa] hover:text-[#fafafa] transition-colors" href="#">Dashboard</a>
+<a class="text-[#a78bfa] border-b-2 border-[#a78bfa] pb-1" href="#">Analytics</a>
+<a class="text-[#a1a1aa] hover:text-[#fafafa] transition-colors" href="#">Console</a>
+<a class="text-[#a1a1aa] hover:text-[#fafafa] transition-colors" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<button class="p-2 hover:bg-[#27272a] hover:text-[#fafafa] rounded-md transition-all active:scale-95 duration-100 ease-in-out">
+<span class="material-symbols-outlined">sync</span>
+</button>
+<button class="p-2 hover:bg-[#27272a] hover:text-[#fafafa] rounded-md transition-all active:scale-95 duration-100 ease-in-out">
+<span class="material-symbols-outlined">play_arrow</span>
+</button>
+<button class="p-2 hover:bg-[#27272a] hover:text-[#fafafa] rounded-md transition-all active:scale-95 duration-100 ease-in-out">
+<span class="material-symbols-outlined">sensors</span>
+</button>
+</div>
+<div class="h-8 w-8 rounded-full bg-surface-container overflow-hidden border border-outline-variant">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="close up professional portrait of a software engineer with minimalist background high contrast lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuARSCVlztQoRB2Am-MQuNsCQOoj1GmPRFLqdTwanFS28zTcnkE2f_XrHY2ahQSJDh0ZMrVzjXLXV5nRZWr5FfMHyyMO4X9YH_yxxCpz-diA_kGrMhf2p3mbzY-SQv9msorml3GMMBgDcndsDUk78QnZ6AJ5nvf9xhycbimsh3uVX4t3jIV_lk531QWkr5mZKzF2SX_tQbr2iOG0uHDcpp5roO90Oat5jCwqtzziL1j7mmbt4eB0vL7N_Kq-gVSKAvyiZHiavDvNuzI"/>
+</div>
+</div>
+</header>
+<main class="max-w-[1440px] mx-auto p-6 space-y-6">
+<!-- Filters Toolbar -->
+<div class="flex flex-wrap items-center justify-between gap-4 p-4 bg-surface-container rounded-lg border border-outline-variant">
+<div class="flex items-center gap-2 p-1 bg-surface-container-low rounded-md border border-outline-variant">
+<button class="px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-on-primary bg-primary rounded-sm transition-all">POWER</button>
+<button class="px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-on-surface-variant hover:text-on-surface transition-all">VOLTAGE</button>
+<button class="px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-on-surface-variant hover:text-on-surface transition-all">CURRENT</button>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-low p-1 rounded-md border border-outline-variant">
+<button class="px-3 py-1 text-xs font-medium text-on-surface-variant hover:text-primary transition-all">5M</button>
+<button class="px-3 py-1 text-xs font-medium text-on-surface-variant hover:text-primary transition-all">30M</button>
+<button class="px-3 py-1 text-xs font-medium text-primary bg-surface-variant rounded-sm">1H</button>
+<button class="px-3 py-1 text-xs font-medium text-on-surface-variant hover:text-primary transition-all">24H</button>
+</div>
+</div>
+<!-- Charts Grid (Asymmetric) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Node 1 Chart -->
+<div class="lg:col-span-7 bg-surface-container rounded-lg border border-outline-variant overflow-hidden">
+<div class="p-4 border-b border-outline-variant flex justify-between items-center">
+<div>
+<h3 class="text-sm font-bold tracking-tight text-on-surface">Node 1: Main Bus Voltage</h3>
+<p class="text-xs text-on-surface-variant">Real-time spectral analysis • ±0.02% accuracy</p>
+</div>
+<span class="text-xs font-mono px-2 py-1 bg-tertiary-container text-on-tertiary-container rounded">LIVE</span>
+</div>
+<div class="h-[320px] relative w-full bg-surface-container-lowest p-6">
+<div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(circle at 2px 2px, #52525b 1px, transparent 0); background-size: 24px 24px;"></div>
+<!-- Mock Chart Visualization -->
+<div class="relative h-full w-full flex items-end gap-1">
+<div class="w-full h-1/2 border-b border-outline-variant absolute top-1/2 left-0"></div>
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none">
+<path d="M0,160 Q100,120 200,180 T400,140 T600,200 T800,100 T1000,150" fill="none" stroke="#a78bfa" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+<path class="opacity-20" d="M0,160 Q100,120 200,180 T400,140 T600,200 T800,100 T1000,150 V320 H0 Z" fill="url(#grad1)"></path>
+<defs>
+<lineargradient id="grad1" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" style="stop-color:#a78bfa;stop-opacity:1"></stop>
+<stop offset="100%" style="stop-color:#a78bfa;stop-opacity:0"></stop>
+</lineargradient>
+</defs>
+</svg>
+<div class="absolute right-4 top-4 text-right">
+<span class="block text-2xl font-bold text-primary font-mono tracking-tighter">48.02V</span>
+<span class="text-[10px] text-tertiary uppercase font-bold tracking-widest">Nominal Range</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Node 0 Chart -->
+<div class="lg:col-span-5 bg-surface-container rounded-lg border border-outline-variant overflow-hidden">
+<div class="p-4 border-b border-outline-variant">
+<h3 class="text-sm font-bold tracking-tight text-on-surface">Node 0: Auxiliary Feed</h3>
+<p class="text-xs text-on-surface-variant">Stability index: 0.994</p>
+</div>
+<div class="h-[320px] relative w-full bg-surface-container-lowest p-6">
+<div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(circle at 2px 2px, #52525b 1px, transparent 0); background-size: 20px 20px;"></div>
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none">
+<path d="M0,200 L50,190 L100,210 L150,180 L200,195 L250,170 L300,185 L350,160 L400,175" fill="none" stroke="#34d399" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+</svg>
+<div class="absolute bottom-6 left-6 right-6 flex justify-between items-end">
+<div class="bg-surface-container/80 backdrop-blur-md p-3 border border-outline-variant rounded-md">
+<span class="block text-xs text-secondary font-medium">Avg Ripple</span>
+<span class="text-lg font-bold font-mono">12mV</span>
+</div>
+<div class="h-24 w-1 bg-surface-container-high relative rounded-full overflow-hidden">
+<div class="absolute bottom-0 w-full bg-tertiary h-3/4"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bento Stats Footer -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Efficiency -->
+<div class="p-5 bg-surface-container rounded-lg border border-outline-variant flex flex-col justify-between group hover:border-primary transition-all">
+<div class="flex justify-between items-start mb-4">
+<span class="text-secondary font-bold text-[10px] tracking-widest uppercase">Efficiency</span>
+<span class="material-symbols-outlined text-tertiary text-lg">bolt</span>
+</div>
+<div>
+<div class="text-3xl font-bold tracking-tighter">98.4%</div>
+<div class="flex items-center gap-1 mt-1 text-xs text-tertiary">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span>+0.2% vs last hour</span>
+</div>
+</div>
+</div>
+<!-- Anomalies -->
+<div class="p-5 bg-surface-container rounded-lg border border-outline-variant flex flex-col justify-between group hover:border-error transition-all">
+<div class="flex justify-between items-start mb-4">
+<span class="text-secondary font-bold text-[10px] tracking-widest uppercase">Anomalies</span>
+<span class="material-symbols-outlined text-error text-lg">warning</span>
+</div>
+<div>
+<div class="text-3xl font-bold tracking-tighter">0</div>
+<div class="flex items-center gap-1 mt-1 text-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+<span>All systems normal</span>
+</div>
+</div>
+</div>
+<!-- Sync Latency -->
+<div class="p-5 bg-surface-container rounded-lg border border-outline-variant flex flex-col justify-between group hover:border-primary transition-all">
+<div class="flex justify-between items-start mb-4">
+<span class="text-secondary font-bold text-[10px] tracking-widest uppercase">Sync Latency</span>
+<span class="material-symbols-outlined text-primary text-lg">timer</span>
+</div>
+<div>
+<div class="text-3xl font-bold tracking-tighter">4.2ms</div>
+<div class="flex items-center gap-1 mt-1 text-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">hub</span>
+<span>Mesh-wide average</span>
+</div>
+</div>
+</div>
+<!-- Log Storage -->
+<div class="p-5 bg-surface-container rounded-lg border border-outline-variant flex flex-col justify-between group hover:border-primary transition-all">
+<div class="flex justify-between items-start mb-4">
+<span class="text-secondary font-bold text-[10px] tracking-widest uppercase">Log Storage</span>
+<span class="material-symbols-outlined text-on-surface-variant text-lg">database</span>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-xs">
+<span class="text-on-surface-variant">42.8GB / 100GB</span>
+<span class="text-on-surface">42%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[42%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Decorative Infrastructure Illustration (Optional/Background/Context) -->
+<div class="relative w-full h-48 rounded-lg overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover opacity-40 mix-blend-luminosity" data-alt="abstract dark server room macro shot with glowing violet and emerald green indicator lights in narrow depth of field tech aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHAkn2lgVMyJCYtUVk8X0DwY2tsZ9osOyZBa69IgOGgrJExcVqQpinA2MHQ-F226_DN8NLwsC9jni4XKPTXTNOpJ4K3BFRjLxHVt1EYWTip_MuCR0OA7UEOgYiUEU_uH-ZyeM4BuiD4prttvbI8J7wlT67QK8KHlH-uroR2p8QGQOOmeNbqvbrog1U5VffnU3UEAy329Y4Khn4AcE0XtFlDNbPW_UJcV4u685X2_lut0hPilKqJuDLoV_Zt3wFhjH19ZKl2TWuS5Q"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6">
+<h4 class="text-lg font-bold tracking-tighter">Network Topology Status</h4>
+<p class="text-sm text-secondary">All 14 gateway nodes currently operational across 3 zones.</p>
+</div>
+</div>
+</main>
+<!-- Mobile Navigation (Auto-hidden on desktop as per rules) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-[#09090b] border-t border-[#27272a] flex justify-around items-center h-16 z-50">
+<button class="flex flex-col items-center gap-1 text-[#a1a1aa] transition-all">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">Home</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-[#a78bfa] transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">Metrics</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-[#a1a1aa] transition-all">
+<span class="material-symbols-outlined">terminal</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">Console</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-[#a1a1aa] transition-all">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">Settings</span>
+</button>
+</nav>
+</body></html>

@@ -305,6 +305,39 @@ simulation = d3.forceSimulation(graphData.nodes)
 ---
 
 ## 3. Phase 2: Visual Redesign
+**Design Reference:** Use the Stitch mockups for VISUAL AESTHETIC ONLY:
+- `Documentation/Development/v0.7.2-web-ui-enhancement/stitch_analytics_redesign/screen.png` — Settings styling
+- `Documentation/Development/v0.7.2-web-ui-enhancement/stitch_analytics_redesign (1)/screen.png` — Dashboard styling
+- `Documentation/Development/v0.7.2-web-ui-enhancement/stitch_analytics_redesign (2)/screen.png` — Analytics styling
+
+Extract ONLY these visual patterns from the mockups:
+1. Color palette: near-black bg (#09090b), violet primary (#a78bfa), emerald green accents (#34d399), zinc grays for surfaces
+2. Typography: Geist or Inter/JetBrains Mono equivalent, tight letter-spacing on headings, uppercase tiny labels
+3. Card styling: dark surface bg, thin #27272a borders, 8px radius
+4. Node card layout: large monospace metric values, uppercase dim labels, 2x2 metric grid
+5. Chart area: dark backgrounds with subtle dot-grid pattern, taller containers
+6. Metric/time tab buttons: pill-style with active highlight
+7. Settings: dark mode pill toggle, card-based groups
+8. Console `$` prompt styling
+
+> [!CAUTION]
+> DO NOT implement any of the following ghost features from the mockups — 
+> they have NO backend support and will create broken, non-functional UI:
+> - Left sidebar navigation on Settings
+> - System Configuration sliders (Scan Frequency, Replication Delay)
+> - API & Keys Management section
+> - Maintenance section (Update Firmware, Factory Reset)
+> - Display Density selector (Compact/Standard/Comfort)
+> - Power Manager gauge ring / efficiency bar / threshold sliders / "Apply Constraints" button
+> - Stat cards (Efficiency, Anomalies, Sync Latency, Log Storage)
+> - "LIVE" badges, stability indices, spectral analysis text
+> - User profile avatar
+> - Mobile bottom navigation bar
+> - Hero image / decorative footer
+> - "Save Changes" / "Cancel" action bar
+>
+> The backend APIs and WebSocket messages are FIXED. Only restyle existing elements.
+
 
 ### 3.1 Design Tokens
 

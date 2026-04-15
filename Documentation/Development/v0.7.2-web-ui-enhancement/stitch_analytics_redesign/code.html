@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DC Monitor Mesh - Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-bright": "#18181b",
+              "secondary-fixed-dim": "#71717a",
+              "on-primary-fixed": "#2e1065",
+              "inverse-surface": "#fafafa",
+              "tertiary": "#34d399",
+              "on-tertiary": "#001a12",
+              "on-secondary-container": "#a1a1aa",
+              "on-surface-variant": "#a1a1aa",
+              "surface-dim": "#0c0c0f",
+              "primary-container": "#7c3aed",
+              "on-tertiary-container": "#bbf7d0",
+              "on-primary-fixed-variant": "#5b21b6",
+              "secondary-fixed": "#a1a1aa",
+              "on-surface": "#fafafa",
+              "background": "#09090b",
+              "on-secondary-fixed": "#18181b",
+              "on-tertiary-fixed": "#003318",
+              "on-secondary": "#09090b",
+              "error": "#ef4444",
+              "surface-container-low": "#0f0f12",
+              "surface-container": "#121215",
+              "inverse-on-surface": "#09090b",
+              "secondary-container": "#27272a",
+              "on-primary": "#0a0012",
+              "primary-fixed-dim": "#c4b5fd",
+              "on-tertiary-fixed-variant": "#047857",
+              "surface-container-high": "#18181b",
+              "inverse-primary": "#5b21b6",
+              "on-primary-container": "#ede9fe",
+              "outline-variant": "#27272a",
+              "tertiary-container": "#065f46",
+              "surface-container-lowest": "#09090b",
+              "tertiary-fixed-dim": "#6ee7b7",
+              "surface-container-highest": "#1e1e22",
+              "outline": "#52525b",
+              "error-container": "#3b1111",
+              "tertiary-fixed": "#bbf7d0",
+              "on-error-container": "#fca5a5",
+              "secondary": "#71717a",
+              "on-error": "#1a0000",
+              "primary-fixed": "#ede9fe",
+              "surface-tint": "#a78bfa",
+              "primary": "#a78bfa",
+              "surface-variant": "#18181b",
+              "on-secondary-fixed-variant": "#3f3f46",
+              "on-background": "#fafafa",
+              "surface": "#0c0c0f"
+            },
+            fontFamily: {
+              "headline": ["Geist"],
+              "body": ["Geist"],
+              "label": ["Geist"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            background-color: #09090b;
+            color: #fafafa;
+            font-family: 'Geist', sans-serif;
+        }
+        /* Custom scrollbar for Obsidian theme */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #09090b; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: #27272a;
+            height: 4px;
+            border-radius: 2px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #a78bfa;
+            margin-top: -6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen">
+<!-- TopNavBar Component -->
+<header class="flex justify-between items-center w-full px-6 h-16 bg-[#09090b] sticky top-0 z-50 border-b border-[#27272a] font-['Geist'] tracking-tight antialiased text-[#fafafa]">
+<div class="flex items-center gap-8">
+<span class="text-lg font-bold tracking-tighter text-[#fafafa]">DC Monitor Mesh</span>
+<nav class="hidden md:flex items-center gap-6 h-full">
+<a class="text-[#a1a1aa] hover:text-[#fafafa] transition-colors" href="#">Dashboard</a>
+<a class="text-[#a1a1aa] hover:text-[#fafafa] transition-colors" href="#">Analytics</a>
+<a class="text-[#a1a1aa] hover:text-[#fafafa] transition-colors" href="#">Console</a>
+<a class="text-[#a78bfa] border-b-2 border-[#a78bfa] pb-1 h-16 flex items-center" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-[#27272a] hover:text-[#fafafa] rounded-md transition-all active:scale-95 duration-100 ease-in-out">
+<span class="material-symbols-outlined" data-icon="sync">sync</span>
+</button>
+<button class="p-2 hover:bg-[#27272a] hover:text-[#fafafa] rounded-md transition-all active:scale-95 duration-100 ease-in-out">
+<span class="material-symbols-outlined" data-icon="play_arrow">play_arrow</span>
+</button>
+<button class="p-2 hover:bg-[#27272a] hover:text-[#fafafa] rounded-md transition-all active:scale-95 duration-100 ease-in-out">
+<span class="material-symbols-outlined" data-icon="sensors">sensors</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-outline-variant ml-2">
+<img alt="User profile" data-alt="professional portrait of a system administrator in a dark studio setting with soft purple rim lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZui9vG9ZL6zhl41o40M0LDQ7Ta0Iy8XMHiBMCszvlfTtnzSr-q4jgWNzDYaSfK8L4cPq3vSghYE1FY2T1yIu-sR0Xw_kT8BZ4emCSWzqOK5V7fYWzgWHZypIHI-v9e0l2fs_eBto_8ZdHK1_0Npf6Kjjr1LFHRJ4GbjZqxuxaEBC4LEIvN9WmWZyYac9ouGM3yXdTlH5u39HIlSCoi0spoH2IzHtPdDY4rD2kvdr6sffXLDnp_t9PiEktg1FmxVm4Ji8VE7x5ssM"/>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-6 py-8">
+<header class="mb-10">
+<h1 class="text-3xl font-extrabold tracking-tighter text-on-surface">Settings</h1>
+<p class="text-on-surface-variant mt-2">Manage your mesh network configuration and security parameters.</p>
+</header>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Column: Navigation & Info -->
+<div class="lg:col-span-3 space-y-6">
+<nav class="flex flex-col gap-1">
+<button class="flex items-center gap-3 px-4 py-2 text-primary bg-surface-container rounded-lg font-medium text-left">
+<span class="material-symbols-outlined text-sm" data-icon="settings">settings</span>
+                        System
+                    </button>
+<button class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all rounded-lg text-left">
+<span class="material-symbols-outlined text-sm" data-icon="key">key</span>
+                        API &amp; Keys
+                    </button>
+<button class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all rounded-lg text-left">
+<span class="material-symbols-outlined text-sm" data-icon="palette">palette</span>
+                        Appearance
+                    </button>
+<button class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all rounded-lg text-left">
+<span class="material-symbols-outlined text-sm" data-icon="build">build</span>
+                        Maintenance
+                    </button>
+</nav>
+<div class="p-4 bg-surface-container-low border border-outline-variant rounded-xl">
+<h3 class="text-sm font-bold text-on-surface mb-2">Node Status</h3>
+<div class="flex items-center gap-2 mb-4">
+<div class="w-2 h-2 rounded-full bg-tertiary"></div>
+<span class="text-xs text-on-surface-variant">Mesh Core v2.4.1 Active</span>
+</div>
+<div class="text-[10px] text-secondary font-mono bg-background p-2 rounded border border-outline-variant">
+                        Uptime: 14d 02h 11m<br/>
+                        Load: 0.24 / 0.18 / 0.12
+                    </div>
+</div>
+</div>
+<!-- Right Column: Settings Sections -->
+<div class="lg:col-span-9 space-y-8">
+<!-- System Configuration Section -->
+<section class="bg-surface-container border border-outline-variant rounded-xl p-6">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary" data-icon="tune">tune</span>
+<h2 class="text-lg font-bold tracking-tight">System Configuration</h2>
+</div>
+<div class="space-y-8">
+<div>
+<div class="flex justify-between items-center mb-4">
+<div>
+<label class="block text-sm font-medium text-on-surface">Scan Frequency</label>
+<p class="text-xs text-on-surface-variant">Interval between mesh node discovery packets.</p>
+</div>
+<span class="text-sm font-mono text-primary">500ms</span>
+</div>
+<input class="w-full" max="2000" min="100" step="50" type="range" value="500"/>
+</div>
+<div>
+<div class="flex justify-between items-center mb-4">
+<div>
+<label class="block text-sm font-medium text-on-surface">Replication Delay</label>
+<p class="text-xs text-on-surface-variant">Wait time before synchronizing local state changes.</p>
+</div>
+<span class="text-sm font-mono text-primary">15ms</span>
+</div>
+<input class="w-full" max="100" min="1" step="1" type="range" value="15"/>
+</div>
+</div>
+</section>
+<!-- API & Keys Section -->
+<section class="bg-surface-container border border-outline-variant rounded-xl p-6">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary" data-icon="vpn_key">vpn_key</span>
+<h2 class="text-lg font-bold tracking-tight">API &amp; Keys Management</h2>
+</div>
+<div class="space-y-4">
+<div class="flex flex-col gap-2">
+<label class="text-sm font-medium">Primary Access Token</label>
+<div class="flex gap-2">
+<input class="bg-surface-container-low border border-outline-variant rounded-lg px-4 py-2 text-sm font-mono w-full focus:ring-2 focus:ring-primary focus:outline-none" readonly="" type="password" value="********************************"/>
+<button class="bg-secondary-container hover:bg-outline-variant px-3 rounded-lg border border-outline-variant transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="content_copy">content_copy</span>
+</button>
+<button class="bg-secondary-container hover:bg-outline-variant px-3 rounded-lg border border-outline-variant transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="refresh">refresh</span>
+</button>
+</div>
+</div>
+<div class="pt-2">
+<button class="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
+<span class="material-symbols-outlined text-xs" data-icon="add">add</span>
+                                GENERATE NEW SERVICE KEY
+                            </button>
+</div>
+</div>
+</section>
+<!-- Two-column grid for Appearance and Maintenance -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Appearance Section -->
+<section class="bg-surface-container border border-outline-variant rounded-xl p-6">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary" data-icon="desktop_windows">desktop_windows</span>
+<h2 class="text-lg font-bold tracking-tight">Appearance</h2>
+</div>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-3 bg-surface-container-low rounded-lg border border-outline-variant">
+<div class="text-sm font-medium">Dark Mode</div>
+<div class="w-10 h-5 bg-primary rounded-full relative cursor-pointer">
+<div class="absolute right-1 top-1 bg-on-primary w-3 h-3 rounded-full"></div>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold text-on-surface-variant tracking-widest uppercase">Display Density</label>
+<div class="grid grid-cols-3 gap-2">
+<button class="text-xs py-2 bg-secondary-container border border-outline-variant rounded hover:bg-outline-variant transition-colors">Compact</button>
+<button class="text-xs py-2 bg-primary text-on-primary rounded border border-primary transition-colors">Standard</button>
+<button class="text-xs py-2 bg-secondary-container border border-outline-variant rounded hover:bg-outline-variant transition-colors">Comfort</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Maintenance Section -->
+<section class="bg-surface-container border border-outline-variant rounded-xl p-6">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-error" data-icon="emergency">emergency</span>
+<h2 class="text-lg font-bold tracking-tight">Maintenance</h2>
+</div>
+<div class="space-y-3">
+<button class="w-full flex justify-between items-center p-3 bg-surface-container-low border border-outline-variant rounded-lg hover:border-primary transition-all active:scale-[0.98]">
+<div class="text-left">
+<div class="text-sm font-medium">Update Firmware</div>
+<div class="text-[10px] text-on-surface-variant">Last checked 2h ago</div>
+</div>
+<span class="material-symbols-outlined text-primary" data-icon="system_update_alt">system_update_alt</span>
+</button>
+<button class="w-full flex justify-between items-center p-3 bg-error-container/20 border border-error/20 rounded-lg hover:border-error transition-all active:scale-[0.98]">
+<div class="text-left text-error">
+<div class="text-sm font-medium">Factory Reset</div>
+<div class="text-[10px]">Wipe all mesh data</div>
+</div>
+<span class="material-symbols-outlined" data-icon="restart_alt">restart_alt</span>
+</button>
+</div>
+</section>
+</div>
+<!-- Action Bar -->
+<div class="flex justify-end items-center gap-4 pt-4">
+<button class="px-6 py-2 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">Cancel</button>
+<button class="px-8 py-2 bg-primary text-on-primary font-bold rounded-lg hover:brightness-110 active:scale-95 transition-all">Save Changes</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Decoration -->
+<footer class="mt-20 border-t border-outline-variant py-8 px-6">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 opacity-50">
+<div class="flex items-center gap-4 grayscale">
+<img alt="Logo" data-alt="minimalist tech logo icon with sharp geometric lightning bolt shape in white on black background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVf_-we8QmA6TNRuwIEEyd7UUhQmRaFWtSYh3WvlAH3zrQ1rNe4C1lBKkCXqi_MLuk2iSSlcWK5kIFjx0OJ2X9PcDZ2cfLxV3HQwSjbBG7fJSuq9skBsRApXS0GFj6o-eD-bcTK_ng5iwd7M9XHKp-MH9DD-oBwC0pI7hMgXhCkZE0j_fA3E-kfoQrl9p9otry0_Rn6ysUoqyOULMLy6bRuVtmQU8hDKnNt4Bl5kRnf7csWxh2c-7SvmZTMVqtnIONPlfwG6DLmHM"/>
+<span class="text-xs font-bold tracking-widest uppercase">Precision Control Systems</span>
+</div>
+<div class="text-[10px] font-mono">
+                ENCRYPTED CONNECTION : AES-256-GCM
+            </div>
+</div>
+</footer>
+</body></html>
