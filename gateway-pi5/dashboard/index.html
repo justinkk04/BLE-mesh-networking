@@ -38,6 +38,9 @@
         <button class="tab-btn" data-tab="tab-analytics">
             <span class="tab-icon">📊</span> Analytics
         </button>
+        <button class="tab-btn" data-tab="tab-console">
+            <span class="tab-icon">⌘</span> Console
+        </button>
         <button class="tab-btn" data-tab="tab-settings">
             <span class="tab-icon">⚙</span> Settings
         </button>
@@ -45,13 +48,14 @@
 
     <!-- ══════════ Dashboard Tab ══════════ -->
     <div id="tab-dashboard" class="tab-content active">
-        <main id="main-grid">
-            <section id="topology-section" class="panel">
+        <!-- Top row: Topology + Power Manager side by side -->
+        <div class="dashboard-top-row">
+            <section id="topology-section" class="panel compact-panel">
                 <h2>Mesh Topology</h2>
                 <svg id="mesh-graph"></svg>
             </section>
 
-            <aside id="pm-panel" class="panel">
+            <aside id="pm-panel" class="panel compact-panel">
                 <h2>Power Manager</h2>
                 <div id="pm-content">
                     <div class="stat-row">
@@ -71,18 +75,13 @@
                     </div>
                 </div>
             </aside>
+        </div>
 
-            <section id="nodes-section">
-                <h2>Nodes</h2>
-                <div id="node-cards"><!-- JS populated --></div>
-            </section>
-
-            <section id="console-section" class="panel">
-                <h2>Console</h2>
-                <div id="console-log"></div>
-                <input id="console-input" type="text" placeholder="Type a command and press Enter...">
-            </section>
-        </main>
+        <!-- Node cards -->
+        <section id="nodes-section">
+            <h2>Active Nodes</h2>
+            <div id="node-cards"><!-- JS populated --></div>
+        </section>
     </div>
 
     <!-- ══════════ Analytics Tab ══════════ -->
@@ -101,8 +100,28 @@
                     <button class="time-btn" data-minutes="1440">24h</button>
                 </div>
             </div>
+            <div class="node-selector-row">
+                <span class="node-selector-label">Node</span>
+                <div id="node-selector">
+                    <!-- Node pills populated by charts.js -->
+                </div>
+            </div>
             <div id="charts-container">
-                <!-- Per-node charts created dynamically by charts.js -->
+                <!-- Single node chart created dynamically by charts.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════ Console Tab ══════════ -->
+    <div id="tab-console" class="tab-content">
+        <div id="console-tab-content">
+            <div class="console-tab-header">
+                <h2>Console Logs</h2>
+            </div>
+            <div id="console-log"></div>
+            <div class="console-input-row">
+                <span class="console-prompt">$</span>
+                <input id="console-input" type="text" placeholder="Type a command and press Enter...">
             </div>
         </div>
     </div>
@@ -114,27 +133,44 @@
 
             <!-- Appearance -->
             <div class="settings-group">
-                <h3 class="settings-group-title">Appearance</h3>
+                <h3 class="settings-group-title">🖥 Appearance</h3>
                 <div class="settings-row">
                     <div class="settings-label">
-                        <span class="settings-label-text">Theme</span>
-                        <span class="settings-label-desc">Switch between dark and light mode</span>
+                        <span class="settings-label-text">Dark Mode</span>
+                        <span class="settings-label-desc">Switch between dark and light theme</span>
                     </div>
                     <label class="theme-toggle" id="theme-toggle">
                         <input type="checkbox" id="theme-checkbox">
                         <span class="toggle-track">
-                            <span class="toggle-icon toggle-moon">🌙</span>
-                            <span class="toggle-icon toggle-sun">☀️</span>
                             <span class="toggle-thumb"></span>
                         </span>
                     </label>
                 </div>
             </div>
 
+            <!-- PM Configuration -->
+            <div class="settings-group">
+                <h3 class="settings-group-title">⚡ Power Manager</h3>
+                <div class="settings-row">
+                    <div class="settings-label">
+                        <span class="settings-label-text">Threshold</span>
+                        <span class="settings-label-desc">Total power budget in mW (0 = disabled)</span>
+                    </div>
+                    <span id="settings-pm-threshold">--</span>
+                </div>
+                <div class="settings-row">
+                    <div class="settings-label">
+                        <span class="settings-label-text">Priority Node</span>
+                        <span class="settings-label-desc">Node that gets preferential power allocation</span>
+                    </div>
+                    <span id="settings-pm-priority">None</span>
+                </div>
+            </div>
+
             <!-- Command Reference -->
             <div class="settings-group">
-                <h3 class="settings-group-title">Command Reference</h3>
-                <div style="font-family: var(--mono); font-size: 0.85rem; color: var(--text-secondary); line-height: 2;">
+                <h3 class="settings-group-title">📖 Command Reference</h3>
+                <div class="command-ref">
                     <code>poll &lt;seconds&gt;</code> — Set poll interval<br>
                     <code>poll stop</code> — Stop polling<br>
                     <code>threshold &lt;mW&gt;</code> — Set PM threshold<br>

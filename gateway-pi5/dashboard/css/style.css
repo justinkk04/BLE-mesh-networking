@@ -5,49 +5,60 @@
 
 /* ── Design Tokens ── */
 :root {
-    /* Backgrounds */
+    /* Backgrounds — deeper darks */
     --bg-primary: #0a0a0f;
     --bg-secondary: #0e0e16;
-    --bg-card: rgba(15, 18, 30, 0.7);
-    --bg-elevated: rgba(22, 26, 42, 0.85);
-    --bg-surface: rgba(255, 255, 255, 0.03);
+    --bg-card: rgba(15, 18, 30, 0.75);
+    --bg-elevated: rgba(22, 26, 42, 0.9);
+    --bg-surface: rgba(255, 255, 255, 0.04);
+    --bg-console: #0d1117;
 
     /* Borders */
     --border: rgba(255, 255, 255, 0.06);
     --border-hover: rgba(255, 255, 255, 0.12);
     --border-active: rgba(255, 255, 255, 0.18);
 
-    /* Text */
+    /* Text — higher contrast */
     --text-primary: #e8ecf4;
-    --text-secondary: #7d8590;
-    --text-dim: #3d4450;
+    --text-secondary: #8b949e;
+    --text-dim: #484f58;
     --text-bright: #ffffff;
 
-    /* Accents */
-    --accent-primary: hsl(230, 80%, 65%);
-    --accent-primary-glow: hsla(230, 80%, 65%, 0.15);
+    /* Accents — subtle purple */
+    --accent-primary: hsl(270, 60%, 60%);
+    --accent-primary-glow: hsla(270, 60%, 60%, 0.15);
     --accent-green: hsl(145, 65%, 50%);
     --accent-green-glow: hsla(145, 65%, 50%, 0.12);
     --accent-orange: hsl(35, 85%, 55%);
     --accent-orange-glow: hsla(35, 85%, 55%, 0.12);
     --accent-red: hsl(5, 90%, 60%);
     --accent-red-glow: hsla(5, 90%, 60%, 0.12);
-    --accent-purple: hsl(270, 75%, 70%);
-    --accent-purple-glow: hsla(270, 75%, 70%, 0.12);
+    --accent-purple: hsl(270, 60%, 60%);
+    --accent-purple-glow: hsla(270, 60%, 60%, 0.12);
     --accent-cyan: hsl(185, 65%, 55%);
 
     /* Typography */
     --font: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     --mono: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+    --text-xs: 0.75rem;
+    --text-sm: 0.85rem;
+    --text-base: 1rem;
+    --text-lg: 1.25rem;
+    --text-xl: 1.5rem;
+    --text-2xl: 2rem;
+
+    /* Spacing */
     --radius: 12px;
     --radius-sm: 8px;
     --radius-xs: 6px;
+    --gap: 1rem;
+    --gap-lg: 1.5rem;
 
     /* Shadows */
     --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.15);
     --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.4), 0 8px 32px rgba(0, 0, 0, 0.2);
     --shadow-glow-green: 0 0 12px hsla(145, 65%, 50%, 0.3);
-    --shadow-glow-blue: 0 0 12px hsla(230, 80%, 65%, 0.3);
+    --shadow-glow-blue: 0 0 12px hsla(270, 60%, 60%, 0.3);
     --shadow-glow-red: 0 0 12px hsla(5, 90%, 60%, 0.3);
 }
 
@@ -292,10 +303,29 @@ header h1::before {
 div.tab-content {
     display: none !important;
     animation: fadeIn 0.15s ease-out;
+    flex: 1;
+    min-height: 0;
 }
 
 div.tab-content.active {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column;
+}
+
+#tab-dashboard {
+    gap: 0;
+}
+
+#tab-console {
+    /* Active state already flexes; just ensure no extra padding */
+}
+
+#analytics-grid {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 1.25rem;
 }
 
 /* ── Badges ── */
@@ -340,43 +370,43 @@ div.tab-content.active {
     border: 1px solid hsla(230, 80%, 65%, 0.2);
 }
 
-/* ── Main Layout ── */
-#main-grid {
-    flex: 1;
+/* ── Dashboard Top Row (v0.7.2 — topology + PM side by side) ── */
+.dashboard-top-row {
     display: grid;
-    gap: 1rem;
-    padding: 1.25rem;
-    grid-template-columns: 1fr;
-    grid-template-areas:
-        "topology"
-        "power"
-        "nodes"
-        "console";
+    grid-template-columns: 1.5fr 1fr;
+    gap: var(--gap);
+    padding: 1rem 1.25rem 0;
+    flex-shrink: 0;
 }
 
-@media (min-width: 768px) {
-    #main-grid {
-        grid-template-columns: 1fr 1fr;
-        grid-template-areas:
-            "topology power"
-            "nodes nodes"
-            "console console";
+.compact-panel {
+    height: 300px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#nodes-section {
+    padding: 0.75rem 1.25rem 1.25rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+#node-cards {
+    flex: 1;
+    align-content: start;
+}
+
+@media (max-width: 768px) {
+    .dashboard-top-row {
+        grid-template-columns: 1fr;
     }
-}
 
-@media (min-width: 1200px) {
-    #main-grid {
-        grid-template-columns: 2fr 1fr;
-        grid-template-areas:
-            "topology power"
-            "nodes nodes"
-            "console console";
+    .compact-panel {
+        height: 260px;
     }
-}
-
-/* ── Analytics Layout ── */
-#analytics-grid {
-    padding: 1.25rem;
 }
 
 /* ── Settings Layout ── */
@@ -395,42 +425,16 @@ div.tab-content.active {
 }
 
 /* ── Sections ── */
-#topology-section {
-    grid-area: topology;
-    min-height: 280px;
-    height: 320px;
-    /* Hard height to stop grid stretching loop */
-    max-height: 400px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-#mesh-graph {
+#topology-section #mesh-graph {
     flex: 1;
     width: 100%;
-    height: 100%;
     min-height: 0;
-    max-height: 100%;
     display: block;
 }
 
-#pm-panel {
-    grid-area: power;
-    height: 320px;
-    /* Match topology height to lock the grid row */
+#pm-panel #pm-content {
+    flex: 1;
     overflow-y: auto;
-}
-
-#nodes-section {
-    grid-area: nodes;
-}
-
-#console-section {
-    grid-area: console;
-    display: flex;
-    flex-direction: column;
-    height: 320px;
 }
 
 /* ── Panel Base ── */
@@ -463,7 +467,7 @@ h2 {
 /* ── Node Cards ── */
 #node-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 0.875rem;
 }
 
@@ -541,7 +545,7 @@ h2 {
 
 .node-metrics {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.625rem;
     margin-bottom: 0.875rem;
 }
@@ -572,6 +576,21 @@ h2 {
     animation: valueFlash 0.4s ease-out;
 }
 
+/* v0.7.2 — large monospace metric values */
+.metric-value {
+    font-family: var(--mono);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--text-bright);
+    font-variant-numeric: tabular-nums;
+    transition: color 0.3s ease;
+    white-space: nowrap;
+}
+
+.metric-value.flash {
+    animation: valueFlash 0.4s ease-out;
+}
+
 /* ── Power Bar ── */
 .power-bar-bg {
     height: 4px;
@@ -590,73 +609,139 @@ h2 {
     background: var(--accent-primary);
 }
 
-/* ── Node Menu ── */
-.node-menu-btn {
-    background: transparent;
-    border: none;
+/* ── Duty Bar (v0.7.2) ── */
+.duty-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.duty-label {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 1px;
     color: var(--text-dim);
-    cursor: pointer;
-    padding: 0.25rem;
-    border-radius: var(--radius-xs);
-    transition: background 0.2s, color 0.2s;
-    font-size: 0.85rem;
+    white-space: nowrap;
 }
 
-.node-menu-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--text-secondary);
+.duty-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-surface);
+    border-radius: 3px;
+    overflow: hidden;
 }
 
-/* ── Popover ── */
-.popover {
-    position: absolute;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border-hover);
+.duty-fill {
+    height: 100%;
+    background: var(--accent-primary);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+.duty-pct {
+    font-family: var(--mono);
+    font-size: var(--text-sm);
+    color: var(--accent-primary);
+    min-width: 3rem;
+    text-align: right;
+}
+
+/* ── Node Inline Controls (v0.7.2) ── */
+.node-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+    margin-top: 0.25rem;
+}
+
+.duty-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex: 1;
+}
+
+.duty-input-group label {
+    font-size: var(--text-xs);
+    color: var(--text-dim);
+    white-space: nowrap;
+}
+
+.duty-input {
+    width: 4rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    padding: 0.375rem;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.03);
-    display: none;
-    z-index: 100;
-    min-width: 140px;
-    right: 1rem;
-    top: 2.75rem;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-}
-
-.popover.active {
-    display: block;
-    animation: fadeIn 0.1s ease-out;
-}
-
-.popover-item {
-    padding: 0.4rem 0.75rem;
-    color: var(--text-secondary);
-    cursor: pointer;
-    border-radius: var(--radius-xs);
-    font-size: 0.8rem;
-    font-weight: 500;
-    transition: background 0.15s, color 0.15s;
-}
-
-.popover-item:hover {
-    background: rgba(255, 255, 255, 0.06);
+    padding: 0.35rem 0.5rem;
+    font-family: var(--mono);
+    font-size: var(--text-sm);
     color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s;
 }
 
-/* ── Console ── */
+.duty-input:focus {
+    border-color: var(--accent-primary);
+}
+
+.btn-set,
+.btn-read {
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+    font-family: var(--font);
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    white-space: nowrap;
+}
+
+.btn-set:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--border-hover);
+}
+
+.btn-read {
+    background: var(--accent-primary-glow);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.btn-read:hover {
+    background: hsla(270, 60%, 60%, 0.25);
+}
+
+/* ── Console Tab (v0.7.2 terminal aesthetic) ── */
+#console-tab-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    padding: 1.25rem;
+    gap: 0;
+}
+
+.console-tab-header {
+    margin-bottom: 0.75rem;
+}
+
 #console-log {
     flex: 1;
     overflow-y: auto;
     font-family: var(--mono);
-    font-size: 0.8rem;
-    line-height: 1.6;
+    font-size: var(--text-sm);
+    line-height: 1.8;
     color: var(--text-secondary);
-    padding: 0.75rem;
-    background: rgba(0, 0, 0, 0.4);
+    padding: 1rem;
+    background: var(--bg-console);
     border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    margin-bottom: 0.5rem;
+    border-radius: var(--radius);
     white-space: pre-wrap;
     word-break: break-all;
 }
@@ -666,14 +751,30 @@ h2 {
     margin-right: 0.5rem;
 }
 
+.console-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 0;
+}
+
+.console-prompt {
+    font-family: var(--mono);
+    color: var(--accent-primary);
+    font-weight: 600;
+    font-size: var(--text-base);
+    user-select: none;
+}
+
 #console-input {
-    background: rgba(0, 0, 0, 0.3);
+    flex: 1;
+    background: var(--bg-console);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 0.625rem 0.875rem;
     color: var(--text-primary);
     font-family: var(--mono);
-    font-size: 0.8rem;
+    font-size: var(--text-sm);
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -687,13 +788,13 @@ h2 {
     color: var(--text-dim);
 }
 
-/* ── Topology ── */
-#mesh-graph {
-    width: 100%;
-    height: 100%;
-    display: block;
+/* Light theme console overrides */
+[data-theme="light"] #console-tab-content #console-log,
+[data-theme="light"] #console-input {
+    background: rgba(0, 0, 0, 0.03);
 }
 
+/* ── Topology ── */
 /* Animated mesh links */
 .mesh-link {
     stroke: rgba(255, 255, 255, 0.1);
@@ -710,6 +811,7 @@ h2 {
     margin-bottom: 1rem;
     flex-wrap: wrap;
     gap: 0.5rem;
+    flex-shrink: 0;
 }
 
 #metric-tabs {
@@ -777,16 +879,78 @@ h2 {
     color: var(--accent-primary);
 }
 
+/* ── Node Selector (v0.7.2 Analytics) ── */
+.node-selector-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.node-selector-label {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    font-weight: 600;
+}
+
+#node-selector {
+    display: flex;
+    gap: 2px;
+    background: var(--bg-surface);
+    border-radius: var(--radius-xs);
+    padding: 2px;
+    border: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.node-tab {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    padding: 0.35rem 0.85rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: var(--mono);
+    transition: all 0.2s;
+}
+
+.node-tab:hover {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.node-tab.active {
+    background: var(--accent-primary-glow);
+    color: var(--accent-primary);
+    box-shadow: 0 0 8px var(--accent-primary-glow);
+}
+
+.node-tab-empty {
+    padding: 0.35rem 0.85rem;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    font-style: italic;
+}
+
 /* ── Per-Node Charts ── */
 #charts-container {
+    flex: 1;
     display: flex;
     flex-direction: column;
+    min-height: 0;
     gap: 1rem;
 }
 
 .node-chart-wrapper {
     position: relative;
-    height: 200px;
+    flex: 1;
+    min-height: 380px;
     width: 100%;
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -797,6 +961,10 @@ h2 {
     -webkit-backdrop-filter: blur(16px);
     box-shadow: var(--shadow-card);
     transition: border-color 0.3s;
+}
+
+.node-chart-wrapper.hidden {
+    display: none;
 }
 
 .node-chart-wrapper:hover {
@@ -812,6 +980,16 @@ h2 {
     color: var(--text-dim);
     text-transform: uppercase;
     letter-spacing: 1px;
+}
+
+.charts-empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: var(--text-sm);
+    background: var(--bg-card);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
 }
 
 /* ── Power Manager ── */
@@ -899,9 +1077,13 @@ footer {
         white-space: nowrap;
     }
 
-    #main-grid {
-        padding: 0.75rem;
+    .dashboard-top-row {
+        padding: 0.75rem 0.75rem 0;
         gap: 0.75rem;
+    }
+
+    #nodes-section {
+        padding: 0.75rem;
     }
 }
 
@@ -922,16 +1104,16 @@ footer {
     --text-dim: #9ca3af;
     --text-bright: #000000;
 
-    --accent-primary: hsl(230, 75%, 55%);
-    --accent-primary-glow: hsla(230, 75%, 55%, 0.12);
+    --accent-primary: hsl(270, 60%, 50%);
+    --accent-primary-glow: hsla(270, 60%, 50%, 0.12);
     --accent-green: hsl(145, 60%, 40%);
     --accent-green-glow: hsla(145, 60%, 40%, 0.10);
     --accent-orange: hsl(35, 80%, 48%);
     --accent-orange-glow: hsla(35, 80%, 48%, 0.10);
     --accent-red: hsl(5, 85%, 52%);
     --accent-red-glow: hsla(5, 85%, 52%, 0.10);
-    --accent-purple: hsl(270, 65%, 55%);
-    --accent-purple-glow: hsla(270, 65%, 55%, 0.10);
+    --accent-purple: hsl(270, 60%, 50%);
+    --accent-purple-glow: hsla(270, 60%, 50%, 0.10);
     --accent-cyan: hsl(185, 60%, 42%);
 
     --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
@@ -951,13 +1133,6 @@ footer {
     -webkit-backdrop-filter: blur(8px);
 }
 
-[data-theme="light"] #console-log {
-    background: rgba(0, 0, 0, 0.03);
-}
-
-[data-theme="light"] #console-input {
-    background: rgba(0, 0, 0, 0.02);
-}
 
 [data-theme="light"] .mesh-link {
     stroke: rgba(0, 0, 0, 0.12) !important;
@@ -1036,6 +1211,21 @@ footer {
     color: var(--text-dim);
 }
 
+.command-ref {
+    font-family: var(--mono);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: 2;
+}
+
+.command-ref code {
+    color: var(--accent-primary);
+    background: var(--accent-primary-glow);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    font-size: 0.82rem;
+}
+
 /* ── Theme Toggle Switch ── */
 .theme-toggle {
     position: relative;
@@ -1089,21 +1279,13 @@ footer {
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s;
 }
 
-/* Light mode active state */
+/* Active (light mode) state — pill slides to the right */
 .theme-toggle input:checked+.toggle-track {
-    background: hsla(45, 90%, 55%, 0.15);
-    border-color: hsla(45, 90%, 55%, 0.3);
+    background: var(--accent-primary-glow);
+    border-color: var(--accent-primary);
 }
 
 .theme-toggle input:checked+.toggle-track .toggle-thumb {
     transform: translateX(27px);
-    background: hsl(45, 90%, 55%);
-}
-
-.theme-toggle input:checked+.toggle-track .toggle-moon {
-    opacity: 0.4;
-}
-
-.theme-toggle input:checked+.toggle-track .toggle-sun {
-    opacity: 1;
+    background: var(--accent-primary);
 }

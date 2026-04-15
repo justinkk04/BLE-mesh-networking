@@ -1,12 +1,13 @@
-// Time-Series Charts — Multi-Metric (Power / Voltage / Current)
+// Time-Series Charts — Single-Node View with Node Selector
 let charts = {};      // { nodeId: Chart instance }
 let currentWindowMinutes = 5;
 let currentMetric = 'power';
+let selectedNode = null;  // Currently viewed node (null = auto-pick first)
 let clockOffset = 0;  // (browser_time - server_time) in seconds
 
 const nodeSeries = {}; // { nodeId: [{x, power, voltage, current}] }
 const colors = [
-    '#58a6ff', '#3fb950', '#bc8cff', '#d29922', '#39c5cf', '#f85149'
+    '#bc8cff', '#58a6ff', '#3fb950', '#d29922', '#39c5cf', '#f85149'
 ];
 
 const metricInfo = {
@@ -40,6 +41,22 @@ export function init() {
         });
     });
 
+    // Event delegation for node selector pills
+    const nodeSelector = document.getElementById('node-selector');
+    if (nodeSelector) {
+        nodeSelector.addEventListener('click', (e) => {
+            const btn = e.target.closest('.node-tab');
+            if (!btn) return;
+            selectedNode = btn.dataset.node;
+            updateNodeSelectorUI();
+            updateChartVisibility();
+        });
+    }
+
+    // Render empty selector immediately so UI isn't blank before data arrives
+    rebuildNodeSelector();
+    showEmptyState();
+
     // Initial fetch
     fetchHistory();
 
@@ -47,11 +64,23 @@ export function init() {
     setInterval(updateAllWindows, 2000);
 }
 
+function showEmptyState() {
+    const container = document.getElementById('charts-container');
+    if (!container) return;
+    if (Object.keys(charts).length === 0 && !container.querySelector('.charts-empty-state')) {
+        container.innerHTML = '<div class="charts-empty-state">Waiting for node data…</div>';
+    }
+}
+
 function getOrCreateChart(nodeId) {
     if (charts[nodeId]) return charts[nodeId];
 
     const container = document.getElementById('charts-container');
     if (!container) return null;
+
+    // Remove empty state if present
+    const empty = container.querySelector('.charts-empty-state');
+    if (empty) empty.remove();
 
     // Create wrapper div for this node's chart
     const wrapper = document.createElement('div');
@@ -110,22 +139,67 @@ function getOrCreateChart(nodeId) {
                         callback: (v) => new Date(v).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                         maxTicksLimit: 6,
                         maxRotation: 0,
-                        font: { size: 10 }
+                        font: { size: 11 }
                     },
                     grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
                 },
                 y: {
                     beginAtZero: true,
-                    title: { display: true, text: info.label, color: '#484f58', font: { size: 10 } },
+                    title: { display: true, text: info.label, color: '#484f58', font: { size: 11 } },
                     grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
-                    ticks: { font: { size: 10 } }
+                    ticks: { font: { size: 11 } }
                 }
             }
         }
     });
 
     charts[nodeId] = chart;
+    rebuildNodeSelector();
+    updateChartVisibility();
     return chart;
+}
+
+function rebuildNodeSelector() {
+    const selector = document.getElementById('node-selector');
+    if (!selector) return;
+
+    const nodeIds = Object.keys(nodeSeries).sort((a, b) => Number(a) - Number(b));
+
+    if (nodeIds.length === 0) {
+        selector.innerHTML = '<span class="node-tab-empty">No nodes</span>';
+        return;
+    }
+
+    // Auto-select first if none selected or selected no longer exists
+    if (!selectedNode || !nodeIds.includes(selectedNode)) {
+        selectedNode = nodeIds[0];
+    }
+
+    selector.innerHTML = nodeIds.map(nid => `
+        <button class="node-tab ${nid === selectedNode ? 'active' : ''}" data-node="${nid}">
+            Node ${nid}
+        </button>
+    `).join('');
+}
+
+function updateNodeSelectorUI() {
+    document.querySelectorAll('.node-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.node === selectedNode);
+    });
+}
+
+function updateChartVisibility() {
+    Object.entries(charts).forEach(([nid, chart]) => {
+        const wrapper = document.getElementById(`chart-wrap-${nid}`);
+        if (wrapper) {
+            wrapper.classList.toggle('hidden', nid !== selectedNode);
+        }
+    });
+    // Force active chart to resize to new container dimensions
+    if (selectedNode && charts[selectedNode]) {
+        charts[selectedNode].resize();
+        charts[selectedNode].update('none');
+    }
 }
 
 async function fetchHistory() {
@@ -149,6 +223,7 @@ async function fetchHistory() {
             }, false);
         }
 
+        rebuildNodeSelector();
         rebuildAllCharts();
     } catch (e) {
         console.error("Failed to fetch history:", e);
@@ -156,7 +231,8 @@ async function fetchHistory() {
 }
 
 export function addPoint(nodeId, timestampSeconds, data, live = true) {
-    if (!nodeSeries[nodeId]) {
+    const isNewNode = !nodeSeries[nodeId];
+    if (isNewNode) {
         nodeSeries[nodeId] = [];
     }
 
@@ -185,6 +261,7 @@ export function addPoint(nodeId, timestampSeconds, data, live = true) {
 
             chart.update('none');
         }
+        if (isNewNode) rebuildNodeSelector();
     }
 }
 
@@ -195,7 +272,7 @@ function rebuildAllCharts() {
     const minTs = now - (currentWindowMinutes * 60 * 1000);
 
     // Get all known node IDs
-    const nodeIds = Object.keys(nodeSeries).sort();
+    const nodeIds = Object.keys(nodeSeries).sort((a, b) => Number(a) - Number(b));
 
     for (const nid of nodeIds) {
         const chart = getOrCreateChart(nid);
@@ -229,6 +306,8 @@ function rebuildAllCharts() {
 
         chart.update('none');
     }
+
+    updateChartVisibility();
 }
 
 function updateAllWindows() {
@@ -257,5 +336,8 @@ export function setClockOffset(offset) {
 // Chart.js needs the container visible to measure canvas dimensions
 export function refresh() {
     rebuildAllCharts();
+    // Resize the visible chart now that container has dimensions
+    if (selectedNode && charts[selectedNode]) {
+        charts[selectedNode].resize();
+    }
 }
-

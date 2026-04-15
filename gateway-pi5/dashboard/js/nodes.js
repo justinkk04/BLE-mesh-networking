@@ -5,6 +5,23 @@ const nodesData = {};
 export function init(sendCommandCallback) {
     sendCmdFunc = sendCommandCallback;
 
+    // Event delegation for inline node controls
+    const container = document.getElementById('node-cards');
+    container.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        const nodeId = btn.dataset.node;
+        const action = btn.dataset.action;
+
+        if (action === 'read') {
+            sendCmdFunc(`node ${nodeId} read`);
+        } else if (action === 'duty') {
+            const input = btn.closest('.duty-input-group').querySelector('.duty-input');
+            const val = input.value;
+            if (val !== '') sendCmdFunc(`node ${nodeId} duty ${val}`);
+        }
+    });
+
     // Periodic timer to update status badges (stale -> offline transitions)
     setInterval(() => {
         Object.entries(nodesData).forEach(([id, data]) => {
@@ -41,7 +58,6 @@ function renderCard(id, data) {
     let card = document.getElementById(`node-card-${id}`);
     const container = document.getElementById('node-cards');
     const { cls: statusClass, text: statusText } = getStatus(data);
-    const isNew = !card;
 
     if (!card) {
         card = document.createElement('div');
@@ -53,41 +69,35 @@ function renderCard(id, data) {
                 <div class="node-title">
                     Node ${id} <span class="badge ${statusClass}">${statusText}</span>
                 </div>
-                <div style="position: relative;">
-                    <button class="node-menu-btn" onclick="document.getElementById('popover-${id}').classList.toggle('active')">
-                        ⚙️
-                    </button>
-                    <div id="popover-${id}" class="popover">
-                        <div class="popover-item" onclick="promptDuty('${id}')">Set Duty %</div>
-                        <div class="popover-item" onclick="sendRead('${id}')">Read Sensor</div>
-                        <div class="popover-item" onclick="sendStop('${id}')">Stop Load</div>
-                    </div>
-                </div>
             </div>
             <div class="node-metrics">
                 <div class="metric">
-                    <span class="metric-label">Duty / Cmd / Tgt</span>
-                    <span class="metric-val">
-                        <span id="duty-${id}">0</span>% /
-                        <span style="color:var(--text-secondary)"><span id="cmd-${id}">0</span>%</span> /
-                        <span style="color:var(--accent-cyan)"><span id="tgt-${id}">0</span>%</span>
-                    </span>
+                    <span class="metric-label">POWER</span>
+                    <span class="metric-value" data-field="power">-- mW</span>
                 </div>
                 <div class="metric">
-                    <span class="metric-label">Power</span>
-                    <span class="metric-val"><span id="power-${id}">0.0</span> mW</span>
+                    <span class="metric-label">VOLTAGE</span>
+                    <span class="metric-value" data-field="voltage">-- V</span>
                 </div>
                 <div class="metric">
-                    <span class="metric-label">Voltage</span>
-                    <span class="metric-val"><span id="volt-${id}">0.0</span> V</span>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Current</span>
-                    <span class="metric-val"><span id="curr-${id}">0.0</span> mA</span>
+                    <span class="metric-label">CURRENT</span>
+                    <span class="metric-value" data-field="current">-- mA</span>
                 </div>
             </div>
-            <div class="power-bar-bg">
-                <div id="bar-${id}" class="power-bar-fill"></div>
+            <div class="duty-bar-row">
+                <span class="duty-label">DUTY CYCLE</span>
+                <div class="duty-bar">
+                    <div class="duty-fill" data-field="duty-fill"></div>
+                </div>
+                <span class="duty-pct" data-field="duty-pct">0%</span>
+            </div>
+            <div class="node-controls">
+                <div class="duty-input-group">
+                    <label>Set Duty:</label>
+                    <input type="number" class="duty-input" min="0" max="100" step="5" placeholder="%" data-node="${id}">
+                    <button class="btn-set" data-action="duty" data-node="${id}">Set</button>
+                </div>
+                <button class="btn-read" data-action="read" data-node="${id}">Read</button>
             </div>
         `;
         container.appendChild(card);
@@ -104,20 +114,16 @@ function renderCard(id, data) {
     badge.className = `badge ${statusClass}`;
     badge.textContent = statusText;
 
-    // Update values
-    const dutyEl = document.getElementById(`duty-${id}`);
-    const powerEl = document.getElementById(`power-${id}`);
-    const voltEl = document.getElementById(`volt-${id}`);
-    const currEl = document.getElementById(`curr-${id}`);
+    // Update metric values using data-field selectors within this card
+    const powerEl  = card.querySelector('[data-field="power"]');
+    const voltEl   = card.querySelector('[data-field="voltage"]');
+    const currEl   = card.querySelector('[data-field="current"]');
+    const dutyFill = card.querySelector('[data-field="duty-fill"]');
+    const dutyPct  = card.querySelector('[data-field="duty-pct"]');
 
-    dutyEl.textContent = data.duty || 0;
-    document.getElementById(`cmd-${id}`).textContent = data.commanded_duty || 0;
-    document.getElementById(`tgt-${id}`).textContent = data.target_duty || 0;
-
-    // Animate value changes
-    const newPower = data.power ? data.power.toFixed(1) : "0.0";
-    const newVolt = data.voltage ? data.voltage.toFixed(2) : "0.00";
-    const newCurr = data.current ? data.current.toFixed(2) : "0.00";
+    const newPower = data.power   ? `${data.power.toFixed(1)} mW`   : '-- mW';
+    const newVolt  = data.voltage ? `${data.voltage.toFixed(2)} V`   : '-- V';
+    const newCurr  = data.current ? `${data.current.toFixed(2)} mA`  : '-- mA';
 
     if (powerEl.textContent !== newPower) {
         powerEl.textContent = newPower;
@@ -132,19 +138,17 @@ function renderCard(id, data) {
         flashElement(currEl);
     }
 
-    // Power/duty bar — width is duty %, solid color based on level.
-    // Clamp to 0-100 so bar can't exceed its container.
+    // Duty bar — width is duty %, color based on level
     const duty = Math.max(0, Math.min(100, Number(data.duty) || 0));
-    const bar = document.getElementById(`bar-${id}`);
-    bar.style.width = `${duty}%`;
+    dutyFill.style.width = `${duty}%`;
+    dutyPct.textContent = `${duty}%`;
 
-    // Single solid color (no gradient) so the bar clearly reflects duty level.
     let color;
-    if (duty > 80) color = 'var(--accent-red)';
+    if (duty > 80)      color = 'var(--accent-red)';
     else if (duty > 50) color = 'var(--accent-orange)';
     else if (duty > 0)  color = 'var(--accent-primary)';
     else                color = 'transparent';
-    bar.style.background = color;
+    dutyFill.style.background = color;
 }
 
 function flashElement(el) {
@@ -153,29 +157,3 @@ function flashElement(el) {
     void el.offsetWidth;
     el.classList.add('flash');
 }
-
-// Global hooks for popover actions
-window.promptDuty = (id) => {
-    document.getElementById(`popover-${id}`).classList.remove('active');
-    const val = prompt(`Enter new duty cycle for Node ${id} (0-100):`);
-    if (val !== null && !isNaN(val)) {
-        sendCmdFunc(`node ${id} duty ${val}`);
-    }
-};
-
-window.sendRead = (id) => {
-    document.getElementById(`popover-${id}`).classList.remove('active');
-    sendCmdFunc(`node ${id} read`);
-};
-
-window.sendStop = (id) => {
-    document.getElementById(`popover-${id}`).classList.remove('active');
-    sendCmdFunc(`node ${id} stop`);
-};
-
-// Close all popovers on outside click
-document.addEventListener('click', (e) => {
-    if (!e.target.matches('.node-menu-btn')) {
-        document.querySelectorAll('.popover.active').forEach(p => p.classList.remove('active'));
-    }
-});

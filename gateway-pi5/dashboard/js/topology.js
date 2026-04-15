@@ -61,9 +61,9 @@ export function init() {
     nodeGroup = svg.append("g").attr("class", "nodes");
 
     simulation = d3.forceSimulation()
-        .force("charge", d3.forceManyBody().strength(-200))
+        .force("charge", d3.forceManyBody().strength(-150))
         .force("center", d3.forceCenter(width / 2, height / 2))
-        .force("link", d3.forceLink().id(d => d.id).distance(80))
+        .force("link", d3.forceLink().id(d => d.id).distance(60))
         .force("collide", d3.forceCollide().radius(35))
         .on("tick", ticked);
 }
