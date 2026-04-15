@@ -8,6 +8,7 @@ let ws;
 let reconnectDelay = 1000;
 const MAX_DELAY = 10000;
 let currentGatewayNode = null; // Store the active GATT node ID
+let serverClockOffset = 0;    // (browser_time - server_time) in seconds
 
 // ── App Init ──
 document.addEventListener('DOMContentLoaded', () => {
@@ -155,7 +156,9 @@ function handleMessage(msg) {
         handleState(msg.data);
     } else if (msg.type === 'sensor_data') {
         nodes.updateNode(msg.node_id, msg.data);
-        charts.addPoint(msg.node_id, msg.timestamp, {
+        // Use client-side time for charts so window aligns with Date.now()
+        const clientTs = Date.now() / 1000;
+        charts.addPoint(msg.node_id, clientTs, {
             power: msg.data.power,
             voltage: msg.data.voltage,
             current: msg.data.current,
@@ -184,6 +187,12 @@ function handleMessage(msg) {
 
 function handleState(state) {
     if (!state || state.error) return;
+
+    // Compute clock offset: browser_time - server_time
+    if (state.timestamp) {
+        serverClockOffset = Date.now() / 1000 - state.timestamp;
+        charts.setClockOffset(serverClockOffset);
+    }
 
     // Gateway connection status
     if (state.gateway) {

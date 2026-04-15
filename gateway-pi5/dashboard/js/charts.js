@@ -2,6 +2,7 @@
 let charts = {};      // { nodeId: Chart instance }
 let currentWindowMinutes = 5;
 let currentMetric = 'power';
+let clockOffset = 0;  // (browser_time - server_time) in seconds
 
 const nodeSeries = {}; // { nodeId: [{x, power, voltage, current}] }
 const colors = [
@@ -135,10 +136,13 @@ async function fetchHistory() {
         // Clear all series
         Object.keys(nodeSeries).forEach(k => delete nodeSeries[k]);
 
+        // Adjust server timestamps to client time using clock offset
+        const offset = clockOffset;
+
         // Group by node (API returns DESC, iterate backwards for chronological)
         for (let i = history.length - 1; i >= 0; i--) {
             const h = history[i];
-            addPoint(h.node_id, h.timestamp, {
+            addPoint(h.node_id, h.timestamp + offset, {
                 power: h.power_mw,
                 voltage: h.voltage,
                 current: h.current_ma,
@@ -242,6 +246,11 @@ function updateAllWindows() {
 
         chart.update('none');
     }
+}
+
+// Called by app.js to sync server/client clocks for historical data
+export function setClockOffset(offset) {
+    clockOffset = offset;
 }
 
 // Called by app.js when switching to Analytics tab

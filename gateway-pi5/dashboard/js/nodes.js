@@ -132,15 +132,19 @@ function renderCard(id, data) {
         flashElement(currEl);
     }
 
-    // Power/duty bar — width represents duty cycle percentage (0–100%)
-    const duty = data.duty || 0;
+    // Power/duty bar — width is duty %, solid color based on level.
+    // Clamp to 0-100 so bar can't exceed its container.
+    const duty = Math.max(0, Math.min(100, Number(data.duty) || 0));
     const bar = document.getElementById(`bar-${id}`);
     bar.style.width = `${duty}%`;
 
-    // Color the bar based on duty level
-    if (duty > 80) bar.style.background = `linear-gradient(90deg, var(--accent-orange), var(--accent-red))`;
-    else if (duty > 50) bar.style.background = `linear-gradient(90deg, var(--accent-primary), var(--accent-orange))`;
-    else bar.style.background = `linear-gradient(90deg, var(--accent-primary), var(--accent-cyan))`;
+    // Single solid color (no gradient) so the bar clearly reflects duty level.
+    let color;
+    if (duty > 80) color = 'var(--accent-red)';
+    else if (duty > 50) color = 'var(--accent-orange)';
+    else if (duty > 0)  color = 'var(--accent-primary)';
+    else                color = 'transparent';
+    bar.style.background = color;
 }
 
 function flashElement(el) {

@@ -60,6 +60,7 @@ class DCMonitorGateway:
         self._ble_cmd_lock = asyncio.Lock()    # Serialize GATT writes
         self._poll_interrupt = asyncio.Event() # Wakes poll loop for user cmd
         self._pending_user_nodes = set()       # Node IDs awaiting user-triggered response ("*" = ALL)
+        self._user_cmd_timestamps = {}         # {node_id: time.time()} — timestamp-based user cmd tracking
         self._poll_show_log = False            # When True, poll data also shows in TUI log
 
     def mark_user_command(self, target_node: str):
@@ -72,20 +73,25 @@ class DCMonitorGateway:
         each node's response is tracked independently (no wildcard race).
         """
         self._poll_interrupt.set()
+        now = time.time()
         if str(target_node).upper() == "ALL":
             # Add each known node individually — avoids wildcard race with poll loop
             added = False
             for nid in list(self.known_nodes):
                 self._pending_user_nodes.add(str(nid))
+                self._user_cmd_timestamps[str(nid)] = now
                 added = True
             for nid in list(self._last_readings.keys()):
                 self._pending_user_nodes.add(str(nid))
+                self._user_cmd_timestamps[str(nid)] = now
                 added = True
             if not added:
                 # Fallback: no nodes known yet, use wildcard
                 self._pending_user_nodes.add("*")
+                self._user_cmd_timestamps["*"] = now
         else:
             self._pending_user_nodes.add(str(target_node))
+            self._user_cmd_timestamps[str(target_node)] = now
 
     def log(self, text: str, style: str = "", _from_thread: bool = False,
             _debug: bool = False):
@@ -200,13 +206,24 @@ class DCMonitorGateway:
             if evt:
                 evt.set()
 
-            # Determine if this is a user-triggered response
+            # Determine if this is a user-triggered response.
+            # Timestamp-based detection with one-shot consumption per node:
+            # - 3s grace window handles the race where a poll response may
+            #   arrive before the actual duty command response.
+            # - Once we flag a response as user-triggered, we clear the entry
+            #   for that node so subsequent poll responses aren't also flagged
+            #   (prevents TUI flooding when polling at 2s intervals).
             is_user_response = False
-            if node_id in self._pending_user_nodes:
+            now = time.time()
+            cmd_ts = self._user_cmd_timestamps.get(node_id) or self._user_cmd_timestamps.get("*")
+            if cmd_ts and (now - cmd_ts) < 3.0:
+                is_user_response = True
+                # Consume: clear timestamp so only ONE response per node per
+                # user command is flagged. The wildcard is only cleared when
+                # all known nodes have been consumed (handled by mark_user_command
+                # which adds individual entries for ALL).
+                self._user_cmd_timestamps.pop(node_id, None)
                 self._pending_user_nodes.discard(node_id)
-                is_user_response = True
-            elif "*" in self._pending_user_nodes:
-                is_user_response = True
 
             # Web dashboard: broadcast sensor data + record to DB
             if self._web_enabled:
@@ -567,8 +584,12 @@ class DCMonitorGateway:
                     await asyncio.sleep(0.1)
                     continue
 
-                # Clear wildcard user-pending (user cmd responses have arrived by now)
-                self._pending_user_nodes.discard("*")
+                # Clean up expired user-command timestamps (older than 5s)
+                cutoff = time.time() - 5.0
+                expired = [k for k, v in self._user_cmd_timestamps.items() if v < cutoff]
+                for k in expired:
+                    self._user_cmd_timestamps.pop(k, None)
+                    self._pending_user_nodes.discard(k)
 
                 if self.client and self.client.is_connected and not self._reconnecting:
                     await self.send_to_node("ALL", "READ", _silent=True)
